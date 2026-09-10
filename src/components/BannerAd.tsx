@@ -86,7 +86,11 @@ export function BannerAd({ className = '' }: BannerAdProps) {
             </button>
           </div>
           <div className="flex justify-between font-mono">
-            <span className="text-zinc-400">Banner Ad Unit:</span>
+            <span className="text-zinc-400">Ad Unit Name:</span>
+            <span className="text-white font-semibold">{ADMOB_CONFIG.bannerName}</span>
+          </div>
+          <div className="flex justify-between font-mono">
+            <span className="text-zinc-400">Banner Unit ID:</span>
             <span className="text-emerald-400 truncate max-w-[200px]">{ADMOB_CONFIG.bannerId}</span>
           </div>
           <div className="flex justify-between font-mono">
@@ -94,8 +98,8 @@ export function BannerAd({ className = '' }: BannerAdProps) {
             <span className="text-zinc-300">{ADMOB_CONFIG.publisherId}</span>
           </div>
           <div className="flex justify-between font-mono">
-            <span className="text-zinc-400">App ID:</span>
-            <span className="text-zinc-300 truncate max-w-[200px]">{ADMOB_CONFIG.appId}</span>
+            <span className="text-zinc-400">App Name / ID:</span>
+            <span className="text-zinc-300 truncate max-w-[200px]">{ADMOB_CONFIG.appName} ({ADMOB_CONFIG.appId})</span>
           </div>
         </div>
       )}

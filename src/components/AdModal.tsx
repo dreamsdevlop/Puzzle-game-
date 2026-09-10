@@ -9,10 +9,13 @@ interface AdModalProps {
 }
 
 export const ADMOB_CONFIG = {
+  appName: 'Game puzzle',
   publisherId: 'pub-8857493053340063',
-  appId: 'ca-app-pub-8857493053340063~3042053114',
+  appId: 'ca-app-pub-8857493053340063~9438377409',
   rewardedId: 'ca-app-pub-8857493053340063/3042053114',
+  rewardedName: 'King reward ads',
   bannerId: 'ca-app-pub-8857493053340063/5307560708',
+  bannerName: 'Banner add',
   interstitialId: 'ca-app-pub-8857493053340063/3042053114',
 };
 
@@ -163,7 +166,13 @@ export function AdModal({
           className="px-4 py-2 bg-zinc-950/80 border-t border-zinc-800 text-[10px] text-zinc-500 flex flex-col gap-0.5"
         >
           <div className="flex justify-between">
-            <span>AdMob Unit:</span>
+            <span>Ad Unit Name:</span>
+            <span className="font-semibold text-zinc-300">
+              {type === 'rewarded' ? ADMOB_CONFIG.rewardedName : 'Interstitial'}
+            </span>
+          </div>
+          <div className="flex justify-between">
+            <span>AdMob Unit ID:</span>
             <span className="font-mono text-zinc-400">
               {type === 'rewarded' ? ADMOB_CONFIG.rewardedId : ADMOB_CONFIG.interstitialId}
             </span>
@@ -173,8 +182,8 @@ export function AdModal({
             <span className="font-mono text-zinc-400">{ADMOB_CONFIG.publisherId}</span>
           </div>
           <div className="flex justify-between">
-            <span>App ID:</span>
-            <span className="font-mono text-zinc-400">{ADMOB_CONFIG.appId}</span>
+            <span>App Name / ID:</span>
+            <span className="font-mono text-zinc-400">{ADMOB_CONFIG.appName} ({ADMOB_CONFIG.appId})</span>
           </div>
         </div>
       </div>
