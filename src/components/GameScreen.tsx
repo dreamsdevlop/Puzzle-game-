@@ -1,6 +1,7 @@
 import { useEffect, useRef, useState, useTransition } from 'react';
 import {
   ArrowLeft,
+  Check,
   Coins,
   Flame,
   Lightbulb,
@@ -13,7 +14,12 @@ import {
 import { Category, FoundWord, GameMode, GridCoord, PlacedWord } from '../types.ts';
 import { HIGHLIGHT_COLORS } from '../data/colors.ts';
 import { BONUS_WORDS_SET } from '../data/bonusDictionary.ts';
-import { coordsToWord, generatePuzzle, getLineCoords } from '../utils/gridGenerator.ts';
+import {
+  calculateMagneticLine,
+  coordsToWord,
+  generatePuzzle,
+  getLineCoords,
+} from '../utils/gridGenerator.ts';
 import {
   playBonusWordSparkle,
   playButtonTap,
@@ -21,6 +27,7 @@ import {
   playCorrectWord,
   playDragSwoosh,
   playGameOverDescending,
+  playSlideLetterTick,
   playWrongSelection,
 } from '../utils/audio.ts';
 
@@ -75,6 +82,10 @@ export function GameScreen({
   const [startCell, setStartCell] = useState<GridCoord | null>(null);
   const [currentSelectedCoords, setCurrentSelectedCoords] = useState<GridCoord[]>([]);
   const gridContainerRef = useRef<HTMLDivElement>(null);
+  const gridRef = useRef<HTMLDivElement>(null);
+  const gridRectRef = useRef<DOMRect | null>(null);
+  const startPixelRef = useRef<{ x: number; y: number } | null>(null);
+  const cellSizeRef = useRef<number>(35);
 
   // Timer effect
   useEffect(() => {
@@ -154,31 +165,71 @@ export function GameScreen({
   };
 
   // Drag start
-  const handleDragStart = (row: number, col: number) => {
+  const handleDragStart = (row: number, col: number, clientX?: number, clientY?: number) => {
     if (isGameOver || isPaused) return;
+
+    const gridEl = gridRef.current;
+    if (gridEl) {
+      const rect = gridEl.getBoundingClientRect();
+      gridRectRef.current = rect;
+      const cellSize = rect.width / puzzle.size;
+      cellSizeRef.current = cellSize;
+      const centerX = rect.left + (col + 0.5) * cellSize;
+      const centerY = rect.top + (row + 0.5) * cellSize;
+      startPixelRef.current = { x: centerX, y: centerY };
+    } else if (clientX !== undefined && clientY !== undefined) {
+      startPixelRef.current = { x: clientX, y: clientY };
+    }
+
     setIsDragging(true);
     setStartCell({ row, col });
     setCurrentSelectedCoords([{ row, col }]);
-    playDragSwoosh();
+    playSlideLetterTick(1);
   };
 
-  // Drag over
+  // Drag over with high-precision magnetic ray directional snapping
   const handleDragOver = (clientX: number, clientY: number) => {
     if (!isDragging || !startCell) return;
-    const targetCell = getCellFromPoint(clientX, clientY);
-    if (!targetCell) return;
 
-    // Check if line changed
-    const line = getLineCoords(startCell, targetCell);
-    if (line) {
-      if (
-        line.length !== currentSelectedCoords.length ||
-        line[line.length - 1].row !== currentSelectedCoords[currentSelectedCoords.length - 1]?.row ||
-        line[line.length - 1].col !== currentSelectedCoords[currentSelectedCoords.length - 1]?.col
-      ) {
-        setCurrentSelectedCoords(line);
-        playDragSwoosh();
+    let startX = startPixelRef.current?.x;
+    let startY = startPixelRef.current?.y;
+    let cellSize = cellSizeRef.current;
+
+    // Dynamically calculate grid metrics if not yet cached
+    if (!startX || !startY || !cellSize) {
+      const gridEl = gridRef.current;
+      if (gridEl) {
+        const rect = gridEl.getBoundingClientRect();
+        gridRectRef.current = rect;
+        cellSize = rect.width / puzzle.size;
+        cellSizeRef.current = cellSize;
+        startX = rect.left + (startCell.col + 0.5) * cellSize;
+        startY = rect.top + (startCell.row + 0.5) * cellSize;
+        startPixelRef.current = { x: startX, y: startY };
       }
+    }
+
+    if (!startX || !startY || !cellSize) return;
+
+    const dx = clientX - startX;
+    const dy = clientY - startY;
+
+    // Compute magnetic snapped line along nearest of 8 directions
+    const line = calculateMagneticLine(
+      startCell,
+      dx,
+      dy,
+      cellSize,
+      puzzle.size,
+    );
+
+    if (
+      line.length !== currentSelectedCoords.length ||
+      line[line.length - 1]?.row !== currentSelectedCoords[currentSelectedCoords.length - 1]?.row ||
+      line[line.length - 1]?.col !== currentSelectedCoords[currentSelectedCoords.length - 1]?.col
+    ) {
+      setCurrentSelectedCoords(line);
+      playSlideLetterTick(line.length);
     }
   };
 
@@ -187,6 +238,7 @@ export function GameScreen({
     if (!isDragging || !startCell || currentSelectedCoords.length === 0) {
       setIsDragging(false);
       setStartCell(null);
+      startPixelRef.current = null;
       setCurrentSelectedCoords([]);
       return;
     }
@@ -264,6 +316,7 @@ export function GameScreen({
       }
     }
 
+    startPixelRef.current = null;
     setIsDragging(false);
     setStartCell(null);
     setCurrentSelectedCoords([]);
@@ -354,8 +407,30 @@ export function GameScreen({
 
   // Selected word string preview
   const currentSelectionWord = isDragging
-    ? coordsToWord(puzzle.grid, currentSelectedCoords)
+    ? coordsToWord(puzzle.grid, currentSelectedCoords).toUpperCase()
     : '';
+
+  const reversedSelectionWord = currentSelectionWord.split('').reverse().join('');
+
+  // Check if current active swipe matches an unfound target category word
+  const isTargetWordCandidate = Boolean(
+    currentSelectionWord &&
+    currentSelectionWord.length >= 2 &&
+    category.words.some(
+      (w) =>
+        !foundWords.some((fw) => fw.word === w) &&
+        (w === currentSelectionWord || w === reversedSelectionWord),
+    ),
+  );
+
+  // Check if current active swipe matches a valid dictionary bonus word
+  const isBonusWordCandidate = Boolean(
+    !isTargetWordCandidate &&
+    currentSelectionWord.length >= 3 &&
+    (BONUS_WORDS_SET.has(currentSelectionWord) || BONUS_WORDS_SET.has(reversedSelectionWord)) &&
+    !category.words.includes(currentSelectionWord) &&
+    !foundBonusWords.includes(currentSelectionWord),
+  );
 
   return (
     <div
@@ -504,7 +579,7 @@ export function GameScreen({
       <div
         id="word-search-grid-wrapper"
         ref={gridContainerRef}
-        className="w-full flex flex-col items-center justify-center my-auto py-1"
+        className="w-full flex flex-col items-center justify-center my-auto py-1 touch-none"
         onPointerMove={(e) => {
           if (isDragging) {
             handleDragOver(e.clientX, e.clientY);
@@ -512,14 +587,34 @@ export function GameScreen({
         }}
       >
         {/* Live Word Preview Bubble */}
-        <div className="h-6 flex items-center justify-center mb-1">
+        <div className="h-7 flex items-center justify-center mb-1">
           {currentSelectionWord ? (
-            <div className="px-3 py-0.5 rounded-full bg-zinc-900 text-white text-xs font-mono font-bold tracking-widest shadow-md animate-in fade-in duration-100">
-              {currentSelectionWord}
+            <div
+              className={`px-3.5 py-1 rounded-full text-xs font-mono font-bold tracking-widest shadow-md flex items-center gap-1.5 transition-all duration-150 animate-in fade-in zoom-in-95 ${
+                isTargetWordCandidate
+                  ? 'bg-emerald-600 text-white ring-2 ring-emerald-300 scale-105 shadow-emerald-500/20'
+                  : isBonusWordCandidate
+                  ? 'bg-amber-500 text-white ring-2 ring-amber-300 scale-105 shadow-amber-500/20'
+                  : 'bg-zinc-900 text-white'
+              }`}
+            >
+              {isTargetWordCandidate && <Check className="w-3.5 h-3.5 stroke-[3]" />}
+              {isBonusWordCandidate && <Sparkles className="w-3.5 h-3.5 fill-current" />}
+              <span>{currentSelectionWord}</span>
+              {isTargetWordCandidate && (
+                <span className="text-[10px] bg-emerald-700/90 px-1.5 py-0.5 rounded text-emerald-100 font-sans uppercase font-bold tracking-normal">
+                  Match!
+                </span>
+              )}
+              {isBonusWordCandidate && (
+                <span className="text-[10px] bg-amber-600/90 px-1.5 py-0.5 rounded text-amber-100 font-sans uppercase font-bold tracking-normal">
+                  +5 Bonus
+                </span>
+              )}
             </div>
           ) : (
-            <div className="text-[11px] text-zinc-400 font-medium">
-              Drag finger or mouse to connect letters
+            <div className="text-[11px] text-zinc-400 font-medium flex items-center gap-1">
+              <span>Slide finger in any direction to connect words</span>
             </div>
           )}
         </div>
@@ -527,7 +622,8 @@ export function GameScreen({
         {/* The Grid */}
         <div
           id="word-search-grid"
-          className="relative grid p-2 rounded-2xl bg-white shadow-md border border-zinc-200/90 touch-none"
+          ref={gridRef}
+          className="relative grid p-2 rounded-2xl bg-white shadow-md border border-zinc-200/90 touch-none select-none"
           style={{
             gridTemplateColumns: `repeat(${puzzle.size}, minmax(0, 1fr))`,
             gap: puzzle.size >= 12 ? '2px' : '4px',
@@ -536,20 +632,132 @@ export function GameScreen({
             aspectRatio: '1 / 1',
           }}
         >
+          {/* Continuous Connecting Highlighter Capsules SVG Layer */}
+          <div className="absolute inset-2 pointer-events-none z-10">
+            <svg
+              className="w-full h-full overflow-visible"
+              viewBox="0 0 100 100"
+              preserveAspectRatio="none"
+            >
+              {/* 1. Permanent capsules for completed found words */}
+              {foundWords.map((fw, idx) => {
+                if (fw.coords.length < 2) return null;
+                const first = fw.coords[0];
+                const last = fw.coords[fw.coords.length - 1];
+                const x1 = ((first.col + 0.5) / puzzle.size) * 100;
+                const y1 = ((first.row + 0.5) / puzzle.size) * 100;
+                const x2 = ((last.col + 0.5) / puzzle.size) * 100;
+                const y2 = ((last.row + 0.5) / puzzle.size) * 100;
+                const capsuleWidth = (0.76 / puzzle.size) * 100;
+
+                return (
+                  <line
+                    key={`found-capsule-${fw.word}-${idx}`}
+                    x1={`${x1}%`}
+                    y1={`${y1}%`}
+                    x2={`${x2}%`}
+                    y2={`${y2}%`}
+                    stroke={fw.color}
+                    strokeWidth={`${capsuleWidth}%`}
+                    strokeLinecap="round"
+                    className="transition-all duration-300"
+                  />
+                );
+              })}
+
+              {/* 2. Active finger drag continuous highlighter capsule */}
+              {isDragging && currentSelectedCoords.length > 0 && (() => {
+                const first = currentSelectedCoords[0];
+                const last = currentSelectedCoords[currentSelectedCoords.length - 1];
+                const x1 = ((first.col + 0.5) / puzzle.size) * 100;
+                const y1 = ((first.row + 0.5) / puzzle.size) * 100;
+                const x2 = ((last.col + 0.5) / puzzle.size) * 100;
+                const y2 = ((last.row + 0.5) / puzzle.size) * 100;
+                const capsuleWidth = (0.8 / puzzle.size) * 100;
+
+                const activeColor = isTargetWordCandidate
+                  ? 'rgba(16, 185, 129, 0.65)'
+                  : isBonusWordCandidate
+                  ? 'rgba(245, 158, 11, 0.65)'
+                  : 'rgba(59, 130, 246, 0.55)';
+
+                const glowColor = isTargetWordCandidate
+                  ? 'rgba(16, 185, 129, 0.25)'
+                  : isBonusWordCandidate
+                  ? 'rgba(245, 158, 11, 0.25)'
+                  : 'rgba(59, 130, 246, 0.25)';
+
+                return (
+                  <g>
+                    {/* Soft outer glow */}
+                    <line
+                      x1={`${x1}%`}
+                      y1={`${y1}%`}
+                      x2={`${x2}%`}
+                      y2={`${y2}%`}
+                      stroke={glowColor}
+                      strokeWidth={`${capsuleWidth * 1.35}%`}
+                      strokeLinecap="round"
+                    />
+                    {/* Main vibrant highlighter body */}
+                    <line
+                      x1={`${x1}%`}
+                      y1={`${y1}%`}
+                      x2={`${x2}%`}
+                      y2={`${y2}%`}
+                      stroke={activeColor}
+                      strokeWidth={`${capsuleWidth}%`}
+                      strokeLinecap="round"
+                    />
+                    {/* Inner bright core filament */}
+                    <line
+                      x1={`${x1}%`}
+                      y1={`${y1}%`}
+                      x2={`${x2}%`}
+                      y2={`${y2}%`}
+                      stroke="#ffffff"
+                      strokeWidth={`${capsuleWidth * 0.2}%`}
+                      strokeLinecap="round"
+                      opacity="0.8"
+                    />
+                    {/* Leading finger cursor indicator circle */}
+                    <circle
+                      cx={`${x2}%`}
+                      cy={`${y2}%`}
+                      r={`${capsuleWidth * 0.44}%`}
+                      fill={activeColor}
+                      stroke="#ffffff"
+                      strokeWidth="1.5"
+                    />
+                  </g>
+                );
+              })()}
+            </svg>
+          </div>
+
           {puzzle.grid.map((rowArr, rowIndex) =>
             rowArr.map((letter, colIndex) => {
               const inSelection = isCellInSelection(rowIndex, colIndex);
+              const isSelectionHead =
+                isDragging &&
+                currentSelectedCoords[currentSelectedCoords.length - 1]?.row === rowIndex &&
+                currentSelectedCoords[currentSelectedCoords.length - 1]?.col === colIndex;
               const foundColors = getCellFoundColors(rowIndex, colIndex);
               const isHinting = isCellHinting(rowIndex, colIndex);
 
               // Cell Background Style
               let bgStyle = {};
               if (inSelection) {
-                bgStyle = { backgroundColor: 'rgba(47, 128, 237, 0.45)' };
+                bgStyle = {
+                  backgroundColor: isTargetWordCandidate
+                    ? 'rgba(16, 185, 129, 0.32)'
+                    : isBonusWordCandidate
+                    ? 'rgba(245, 158, 11, 0.32)'
+                    : 'rgba(59, 130, 246, 0.32)',
+                };
               } else if (isHinting) {
                 bgStyle = { backgroundColor: 'rgba(250, 204, 21, 0.85)' };
               } else if (foundColors.length > 0) {
-                // If cell belongs to multiple found words, use latest or gradient
                 bgStyle = { backgroundColor: foundColors[foundColors.length - 1] };
               }
 
@@ -560,23 +768,27 @@ export function GameScreen({
                   data-col={colIndex}
                   id={`cell-${rowIndex}-${colIndex}`}
                   onPointerDown={(e) => {
-                    e.currentTarget.releasePointerCapture?.(e.pointerId);
-                    handleDragStart(rowIndex, colIndex);
+                    e.preventDefault();
+                    handleDragStart(rowIndex, colIndex, e.clientX, e.clientY);
                   }}
                   style={bgStyle}
-                  className={`relative flex items-center justify-center rounded-lg font-black select-none transition-all duration-100 ${
+                  className={`relative z-20 flex items-center justify-center rounded-lg font-black select-none transition-all duration-75 ${
                     puzzle.size >= 12
                       ? 'text-xs sm:text-sm font-bold'
                       : 'text-sm sm:text-base font-black'
                   } ${
                     inSelection
-                      ? 'text-blue-950 scale-105 shadow-xs ring-1 ring-blue-500'
+                      ? isTargetWordCandidate
+                        ? 'text-emerald-950 font-black scale-105 ring-1 ring-emerald-500 shadow-xs'
+                        : isBonusWordCandidate
+                        ? 'text-amber-950 font-black scale-105 ring-1 ring-amber-500 shadow-xs'
+                        : 'text-blue-950 font-black scale-105 ring-1 ring-blue-500 shadow-xs'
                       : isHinting
                       ? 'text-amber-950 scale-110 shadow-md ring-2 ring-amber-400 hint-flash-animation'
                       : foundColors.length > 0
                       ? 'text-zinc-950 font-black'
                       : 'text-zinc-700 hover:bg-zinc-100/80 active:scale-95'
-                  }`}
+                  } ${isSelectionHead ? 'ring-2 ring-white/80 shadow-md scale-115' : ''}`}
                 >
                   {letter}
                 </div>

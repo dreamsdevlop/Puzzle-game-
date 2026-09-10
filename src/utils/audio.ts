@@ -251,3 +251,40 @@ export function playGameOverDescending() {
   osc.start(now);
   osc.stop(now + 0.65);
 }
+
+// 9. Finger slide letter step tick: crisp tactile pop with subtle pitch scale
+export function playSlideLetterTick(letterCount: number = 1) {
+  // Mobile haptic vibration if supported
+  if (typeof navigator !== 'undefined' && 'vibrate' in navigator) {
+    try {
+      navigator.vibrate(10);
+    } catch {
+      // ignore
+    }
+  }
+
+  if (!soundEnabled) return;
+  const ctx = getAudioContext();
+  if (!ctx) return;
+
+  const now = ctx.currentTime;
+  const osc = ctx.createOscillator();
+  const gain = ctx.createGain();
+
+  // Subtle pitch ascension as word gets longer (C5 to C6 pentatonic feel)
+  const baseFreq = 440;
+  const freq = Math.min(1100, baseFreq + (letterCount - 1) * 55);
+
+  osc.type = 'sine';
+  osc.frequency.setValueAtTime(freq, now);
+  osc.frequency.exponentialRampToValueAtTime(freq * 0.75, now + 0.04);
+
+  gain.gain.setValueAtTime(0.12, now);
+  gain.gain.exponentialRampToValueAtTime(0.001, now + 0.04);
+
+  osc.connect(gain);
+  gain.connect(ctx.destination);
+
+  osc.start(now);
+  osc.stop(now + 0.045);
+}

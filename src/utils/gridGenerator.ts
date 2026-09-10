@@ -189,3 +189,74 @@ export function getLineCoords(start: GridCoord, end: GridCoord): GridCoord[] | n
 export function coordsToWord(grid: string[][], coords: GridCoord[]): string {
   return coords.map((c) => grid[c.row]?.[c.col] || '').join('');
 }
+
+/**
+ * Calculates a smooth, forgiving line of coordinates from startCell based on the user's finger offset (dx, dy).
+ * Uses magnetic 45-degree angle snapping to lock to the nearest of the 8 principal directions,
+ * and projects finger distance along that ray to determine step count.
+ * This guarantees effortless, natural finger sliding that never drops connection or glitches on diagonals.
+ */
+export function calculateMagneticLine(
+  start: GridCoord,
+  dx: number,
+  dy: number,
+  cellSize: number,
+  gridSize: number,
+): GridCoord[] {
+  const dist = Math.hypot(dx, dy);
+
+  // Still inside or near starting cell: 1 letter selected
+  if (dist < cellSize * 0.35) {
+    return [start];
+  }
+
+  // 8 direction sectors (each 45°: ±22.5°)
+  // 0: Right (0°), 1: Down-Right (45°), 2: Down (90°), 3: Down-Left (135°),
+  // 4: Left (180°), 5: Up-Left (225°), 6: Up (270°), 7: Up-Right (315°)
+  const angleDeg = ((Math.atan2(dy, dx) * 180 / Math.PI) + 360) % 360;
+  const sector = Math.round(angleDeg / 45) % 8;
+
+  const DIRECTIONS = [
+    { dRow: 0, dCol: 1 },   // 0: Right (0°)
+    { dRow: 1, dCol: 1 },   // 1: Down-Right (45°)
+    { dRow: 1, dCol: 0 },   // 2: Down (90°)
+    { dRow: 1, dCol: -1 },  // 3: Down-Left (135°)
+    { dRow: 0, dCol: -1 },  // 4: Left (180°)
+    { dRow: -1, dCol: -1 }, // 5: Up-Left (225°)
+    { dRow: -1, dCol: 0 },  // 6: Up (270°)
+    { dRow: -1, dCol: 1 },  // 7: Up-Right (315°)
+  ];
+
+  const dir = DIRECTIONS[sector];
+
+  // Length of one cell step along this direction in pixel space
+  const isDiagonal = dir.dRow !== 0 && dir.dCol !== 0;
+  const stepPixelDist = isDiagonal ? cellSize * 1.4142 : cellSize;
+
+  // Project finger vector (dx, dy) onto the direction unit vector
+  const ux = isDiagonal ? dir.dCol * 0.7071 : dir.dCol;
+  const uy = isDiagonal ? dir.dRow * 0.7071 : dir.dRow;
+  const projectedDist = dx * ux + dy * uy;
+
+  // Steps along ray: +0.4 offset makes touching into the next tile activate it crisply and smoothly
+  let steps = Math.floor(projectedDist / stepPixelDist + 0.4);
+  if (steps < 0) steps = 0;
+
+  // Maximum steps allowed before hitting grid boundary
+  const maxRowSteps = dir.dRow > 0 ? (gridSize - 1 - start.row) : dir.dRow < 0 ? start.row : 999;
+  const maxColSteps = dir.dCol > 0 ? (gridSize - 1 - start.col) : dir.dCol < 0 ? start.col : 999;
+  const maxSteps = Math.min(maxRowSteps, maxColSteps);
+
+  steps = Math.min(steps, maxSteps);
+
+  const coords: GridCoord[] = [];
+  for (let i = 0; i <= steps; i++) {
+    coords.push({
+      row: start.row + i * dir.dRow,
+      col: start.col + i * dir.dCol,
+    });
+  }
+
+  return coords;
+}
+
