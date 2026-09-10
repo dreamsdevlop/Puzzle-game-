@@ -1,4 +1,4 @@
-import { Category, GridCoord, PlacedWord } from '../types.ts';
+import { Category, GridCoord, LevelDef, PlacedWord } from '../types.ts';
 import { getGridSizeForCategory } from '../data/categories.ts';
 
 const DIRECTIONS: [number, number][] = [
@@ -18,12 +18,14 @@ export interface GeneratedPuzzle {
   placedWords: PlacedWord[];
 }
 
-export function generatePuzzle(category: Category): GeneratedPuzzle {
-  const size = getGridSizeForCategory(category);
-  const words = [...category.words];
+export function generatePuzzle(target: Category | LevelDef): GeneratedPuzzle {
+  const isLevel = 'levelNumber' in target;
+  const size = isLevel ? target.gridSize : getGridSizeForCategory(target);
+  const words = [...target.words];
+  const allowedDirections = isLevel ? target.allowedDirections : DIRECTIONS;
 
   // Try generating board until all words are successfully placed
-  const maxBoardAttempts = 50;
+  const maxBoardAttempts = 60;
 
   for (let attempt = 0; attempt < maxBoardAttempts; attempt++) {
     const grid: (string | null)[][] = Array.from({ length: size }, () =>
@@ -36,7 +38,7 @@ export function generatePuzzle(category: Category): GeneratedPuzzle {
     let allPlaced = true;
 
     for (const word of sortedWords) {
-      const placed = tryPlaceWord(grid, word, size);
+      const placed = tryPlaceWord(grid, word, size, allowedDirections);
       if (placed) {
         placedWords.push(placed);
       } else {
@@ -66,7 +68,7 @@ export function generatePuzzle(category: Category): GeneratedPuzzle {
   );
   const placedWords: PlacedWord[] = [];
   for (const word of words) {
-    const placed = tryPlaceWord(grid, word, size);
+    const placed = tryPlaceWord(grid, word, size, allowedDirections);
     if (placed) {
       placedWords.push(placed);
     }
@@ -82,14 +84,20 @@ export function generatePuzzle(category: Category): GeneratedPuzzle {
   };
 }
 
+export function generatePuzzleForLevel(level: LevelDef): GeneratedPuzzle {
+  return generatePuzzle(level);
+}
+
 function tryPlaceWord(
   grid: (string | null)[][],
   word: string,
   size: number,
+  allowedDirs?: [number, number][],
 ): PlacedWord | null {
   const wordLen = word.length;
   // Shuffle directions and coordinate candidates
-  const shuffledDirs = [...DIRECTIONS].sort(() => Math.random() - 0.5);
+  const directionsToUse = allowedDirs && allowedDirs.length > 0 ? allowedDirs : DIRECTIONS;
+  const shuffledDirs = [...directionsToUse].sort(() => Math.random() - 0.5);
 
   const startPositions: GridCoord[] = [];
   for (let r = 0; r < size; r++) {
@@ -192,7 +200,7 @@ export function coordsToWord(grid: string[][], coords: GridCoord[]): string {
 
 /**
  * Calculates a smooth, forgiving line of coordinates from startCell based on the user's finger offset (dx, dy).
- * Uses magnetic 45-degree angle snapping to lock to the nearest of the 8 principal directions,
+ * Uses magnetic angle snapping to lock to the nearest allowed direction (or all 8 directions),
  * and projects finger distance along that ray to determine step count.
  * This guarantees effortless, natural finger sliding that never drops connection or glitches on diagonals.
  */
@@ -202,21 +210,17 @@ export function calculateMagneticLine(
   dy: number,
   cellSize: number,
   gridSize: number,
+  allowedDirs?: [number, number][],
 ): GridCoord[] {
   const dist = Math.hypot(dx, dy);
 
-  // Still inside or near starting cell: 1 letter selected
-  if (dist < cellSize * 0.35) {
+  // Still inside starting cell: 1 letter selected
+  if (dist < cellSize * 0.28) {
     return [start];
   }
 
   // 8 direction sectors (each 45°: ±22.5°)
-  // 0: Right (0°), 1: Down-Right (45°), 2: Down (90°), 3: Down-Left (135°),
-  // 4: Left (180°), 5: Up-Left (225°), 6: Up (270°), 7: Up-Right (315°)
-  const angleDeg = ((Math.atan2(dy, dx) * 180 / Math.PI) + 360) % 360;
-  const sector = Math.round(angleDeg / 45) % 8;
-
-  const DIRECTIONS = [
+  const ALL_DIRECTIONS = [
     { dRow: 0, dCol: 1 },   // 0: Right (0°)
     { dRow: 1, dCol: 1 },   // 1: Down-Right (45°)
     { dRow: 1, dCol: 0 },   // 2: Down (90°)
@@ -227,7 +231,33 @@ export function calculateMagneticLine(
     { dRow: -1, dCol: 1 },  // 7: Up-Right (315°)
   ];
 
-  const dir = DIRECTIONS[sector];
+  let candidateDirs = ALL_DIRECTIONS;
+  if (allowedDirs && allowedDirs.length > 0) {
+    const filtered = ALL_DIRECTIONS.filter((d) =>
+      allowedDirs.some((ad) => ad[0] === d.dRow && ad[1] === d.dCol),
+    );
+    if (filtered.length > 0) {
+      candidateDirs = filtered;
+    }
+  }
+
+  // Find candidate direction closest to finger angle using cosine similarity (dot product)
+  let bestDir = candidateDirs[0];
+  let maxDot = -Infinity;
+
+  for (const dir of candidateDirs) {
+    const isDiag = dir.dRow !== 0 && dir.dCol !== 0;
+    const ux = isDiag ? dir.dCol * 0.7071 : dir.dCol;
+    const uy = isDiag ? dir.dRow * 0.7071 : dir.dRow;
+
+    const dot = (dx / dist) * ux + (dy / dist) * uy;
+    if (dot > maxDot) {
+      maxDot = dot;
+      bestDir = dir;
+    }
+  }
+
+  const dir = bestDir;
 
   // Length of one cell step along this direction in pixel space
   const isDiagonal = dir.dRow !== 0 && dir.dCol !== 0;
@@ -238,8 +268,8 @@ export function calculateMagneticLine(
   const uy = isDiagonal ? dir.dRow * 0.7071 : dir.dRow;
   const projectedDist = dx * ux + dy * uy;
 
-  // Steps along ray: +0.4 offset makes touching into the next tile activate it crisply and smoothly
-  let steps = Math.floor(projectedDist / stepPixelDist + 0.4);
+  // Steps along ray: +0.42 offset ensures natural, forgiving cell activation
+  let steps = Math.floor(projectedDist / stepPixelDist + 0.42);
   if (steps < 0) steps = 0;
 
   // Maximum steps allowed before hitting grid boundary

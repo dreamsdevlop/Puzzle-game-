@@ -15,19 +15,19 @@ export function BannerAd({ className = '' }: BannerAdProps) {
   return (
     <div
       id="admob-banner-container"
-      className={`w-full flex flex-col items-center justify-center border-t border-zinc-200/80 bg-zinc-100/90 py-1 px-2 select-none shrink-0 ${className}`}
+      className={`w-full flex flex-col items-center justify-center border-t border-zinc-200/80 dark:border-slate-800/80 bg-zinc-100/90 dark:bg-slate-950/90 py-1 px-2 select-none shrink-0 transition-colors ${className}`}
     >
       {/* 320x50 Standard Mobile Banner Format */}
       <div
         id="admob-banner-ad"
-        className="relative w-full max-w-[360px] h-[54px] rounded-lg bg-white border border-zinc-300 shadow-xs flex items-center justify-between px-2.5 overflow-hidden transition-all hover:border-zinc-400"
+        className="relative w-full max-w-[360px] h-[54px] rounded-lg bg-white dark:bg-slate-900 border border-zinc-300 dark:border-slate-800 shadow-xs flex items-center justify-between px-2.5 overflow-hidden transition-all hover:border-zinc-400 dark:hover:border-slate-700"
       >
         {/* Ad Attribution badge */}
         <div className="absolute top-0.5 left-1 flex items-center gap-1 z-10">
           <span className="px-1 py-[1px] text-[8px] font-black uppercase tracking-wider bg-amber-400 text-amber-950 rounded leading-none">
             Ad
           </span>
-          <span className="text-[9px] text-zinc-400 font-medium">Google AdMob</span>
+          <span className="text-[9px] text-zinc-400 dark:text-slate-500 font-medium">Google AdMob</span>
         </div>
 
         {/* Banner Content */}
@@ -39,10 +39,10 @@ export function BannerAd({ className = '' }: BannerAdProps) {
 
           {/* Ad Copy */}
           <div className="flex flex-col text-left overflow-hidden">
-            <span className="text-xs font-bold text-zinc-900 truncate leading-tight">
+            <span className="text-xs font-bold text-zinc-900 dark:text-slate-100 truncate leading-tight transition-colors">
               Word Master 3D • Daily IQ
             </span>
-            <span className="text-[10px] text-zinc-500 truncate leading-tight">
+            <span className="text-[10px] text-zinc-500 dark:text-slate-400 truncate leading-tight transition-colors">
               Sharpen your mind with 1000+ free puzzles!
             </span>
           </div>
@@ -62,7 +62,7 @@ export function BannerAd({ className = '' }: BannerAdProps) {
           <button
             id="admob-banner-info-btn"
             onClick={() => setShowInfo((prev) => !prev)}
-            className="p-1 rounded text-zinc-400 hover:text-zinc-600 transition-colors"
+            className="p-1 rounded text-zinc-400 dark:text-slate-500 hover:text-zinc-600 dark:hover:text-slate-300 transition-colors"
             title="Ad Details"
           >
             <Info className="w-3 h-3" />

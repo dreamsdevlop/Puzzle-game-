@@ -11,7 +11,7 @@ import {
   Volume2,
   VolumeX,
 } from 'lucide-react';
-import { Category, FoundWord, GameMode, GridCoord, PlacedWord } from '../types.ts';
+import { Category, FoundWord, GameMode, GridCoord, LevelDef, PlacedWord, Theme } from '../types.ts';
 import { HIGHLIGHT_COLORS } from '../data/colors.ts';
 import { BONUS_WORDS_SET } from '../data/bonusDictionary.ts';
 import {
@@ -30,18 +30,24 @@ import {
   playSlideLetterTick,
   playWrongSelection,
 } from '../utils/audio.ts';
+import { ThemeToggle } from './ThemeToggle.tsx';
+import { Brain, Star } from 'lucide-react';
 
 interface GameScreenProps {
-  category: Category;
+  category?: Category;
+  level?: LevelDef;
   mode: GameMode;
   coins: number;
   soundEnabled: boolean;
+  theme: Theme;
   onToggleSound: () => void;
+  onToggleTheme: () => void;
   onLevelComplete: (data: {
     score: number;
     timeTakenSeconds: number;
     bonusWords: string[];
     timeLeftSeconds: number;
+    stars: number;
   }) => void;
   onBack: () => void;
   onRequestRewardedAd: (onSuccess: () => void) => void;
@@ -49,23 +55,33 @@ interface GameScreenProps {
 
 export function GameScreen({
   category,
+  level,
   mode,
   coins,
   soundEnabled,
+  theme,
   onToggleSound,
+  onToggleTheme,
   onLevelComplete,
   onBack,
   onRequestRewardedAd,
 }: GameScreenProps) {
+  const activeTarget = level || category!;
+  const targetWords = activeTarget.words;
+  const isLevelMode = Boolean(level);
+
   // Puzzle Generation
-  const [puzzle, setPuzzle] = useState(() => generatePuzzle(category));
+  const [puzzle, setPuzzle] = useState(() => generatePuzzle(activeTarget));
   const [foundWords, setFoundWords] = useState<FoundWord[]>([]);
   const [foundBonusWords, setFoundBonusWords] = useState<string[]>([]);
 
-  // Scoring & Stats
+  // Scoring, Combo System & Stats
   const [score, setScore] = useState(0);
   const [scorePop, setScorePop] = useState<{ id: number; text: string; color: string } | null>(null);
   const [bonusToast, setBonusToast] = useState<string | null>(null);
+  const [comboCount, setComboCount] = useState(0);
+  const [lastWordTime, setLastWordTime] = useState(0);
+  const [comboToast, setComboToast] = useState<string | null>(null);
 
   // Timer: Classic counts up, Time counts down from 120s (2 mins)
   const [elapsedSeconds, setElapsedSeconds] = useState(0);
@@ -117,10 +133,16 @@ export function GameScreen({
 
   // Check victory condition
   useEffect(() => {
-    if (foundWords.length > 0 && foundWords.length === category.words.length) {
-      // Calculate final score
-      // Words found: +10 pts each
-      // Bonus words: +5 pts each
+    if (foundWords.length > 0 && foundWords.length === targetWords.length) {
+      // Calculate stars earned
+      let stars = 1;
+      const targetSec = level ? level.targetSeconds : 120;
+      if (elapsedSeconds <= targetSec) {
+        stars = 3;
+      } else if (elapsedSeconds <= targetSec * 1.6) {
+        stars = 2;
+      }
+
       // Time bonus (Time mode only): +timeLeft * 2
       const timeBonus = mode === 'time' ? timeRemaining * 2 : 0;
       const finalScore = score + timeBonus;
@@ -130,16 +152,18 @@ export function GameScreen({
         timeTakenSeconds: elapsedSeconds,
         bonusWords: foundBonusWords,
         timeLeftSeconds: timeRemaining,
+        stars,
       });
     }
   }, [
     foundWords.length,
-    category.words.length,
+    targetWords.length,
     score,
     mode,
     timeRemaining,
     elapsedSeconds,
     foundBonusWords,
+    level,
     onLevelComplete,
   ]);
 
@@ -214,13 +238,14 @@ export function GameScreen({
     const dx = clientX - startX;
     const dy = clientY - startY;
 
-    // Compute magnetic snapped line along nearest of 8 directions
+    // Compute magnetic snapped line along allowed directions
     const line = calculateMagneticLine(
       startCell,
       dx,
       dy,
       cellSize,
       puzzle.size,
+      level?.allowedDirections,
     );
 
     if (
@@ -246,11 +271,11 @@ export function GameScreen({
     const forwardWord = coordsToWord(puzzle.grid, currentSelectedCoords).toUpperCase();
     const reverseWord = forwardWord.split('').reverse().join('');
 
-    // Check if it matches an unfound category word
+    // Check if it matches an unfound target puzzle word
     let matchedWord: string | null = null;
     let matchedCoords = currentSelectedCoords;
 
-    const unfoundWords = category.words.filter(
+    const unfoundWords = targetWords.filter(
       (w) => !foundWords.some((fw) => fw.word === w),
     );
 
@@ -277,23 +302,40 @@ export function GameScreen({
         },
       ]);
 
-      setScore((prev) => prev + 10);
-      triggerScorePop('+10', 'text-emerald-500');
+      // Combo System: Reward fast pattern discovery
+      const now = Date.now();
+      let nextCombo = 1;
+      if (lastWordTime > 0 && now - lastWordTime < 8500) {
+        nextCombo = comboCount + 1;
+      }
+      setComboCount(nextCombo);
+      setLastWordTime(now);
+
+      const comboBonus = (nextCombo - 1) * 5;
+      const earnedScore = 10 + comboBonus;
+      setScore((prev) => prev + earnedScore);
+
+      if (nextCombo > 1) {
+        triggerScorePop(`+${earnedScore} 🔥${nextCombo}x`, 'text-amber-500');
+        setComboToast(`🔥 ${nextCombo}x Combo! Brain In The Zone! (+${comboBonus} bonus)`);
+        setTimeout(() => setComboToast(null), 2200);
+      } else {
+        triggerScorePop('+10', 'text-emerald-500');
+      }
     } else {
       // Check for Bonus Word:
-      // Valid English word >= 3 letters in BONUS_WORDS_SET, not in puzzle word list, not found yet
       let bonusCandidate: string | null = null;
       if (
         forwardWord.length >= 3 &&
         BONUS_WORDS_SET.has(forwardWord) &&
-        !category.words.includes(forwardWord) &&
+        !targetWords.includes(forwardWord) &&
         !foundBonusWords.includes(forwardWord)
       ) {
         bonusCandidate = forwardWord;
       } else if (
         reverseWord.length >= 3 &&
         BONUS_WORDS_SET.has(reverseWord) &&
-        !category.words.includes(reverseWord) &&
+        !targetWords.includes(reverseWord) &&
         !foundBonusWords.includes(reverseWord)
       ) {
         bonusCandidate = reverseWord;
@@ -304,7 +346,7 @@ export function GameScreen({
         playBonusWordSparkle();
         setFoundBonusWords((prev) => [...prev, bonusCandidate!]);
         setScore((prev) => prev + 5);
-        triggerScorePop('+5', 'text-amber-500');
+        triggerScorePop('+5 Bonus', 'text-amber-500');
 
         setBonusToast(`Bonus Word: ${bonusCandidate} (+5 pts)`);
         setTimeout(() => setBonusToast(null), 2200);
@@ -312,6 +354,7 @@ export function GameScreen({
         // Not a word or already found
         if (currentSelectedCoords.length > 1) {
           playWrongSelection();
+          setComboCount(0);
         }
       }
     }
@@ -412,11 +455,11 @@ export function GameScreen({
 
   const reversedSelectionWord = currentSelectionWord.split('').reverse().join('');
 
-  // Check if current active swipe matches an unfound target category word
+  // Check if current active swipe matches an unfound target puzzle word
   const isTargetWordCandidate = Boolean(
     currentSelectionWord &&
     currentSelectionWord.length >= 2 &&
-    category.words.some(
+    targetWords.some(
       (w) =>
         !foundWords.some((fw) => fw.word === w) &&
         (w === currentSelectionWord || w === reversedSelectionWord),
@@ -428,19 +471,19 @@ export function GameScreen({
     !isTargetWordCandidate &&
     currentSelectionWord.length >= 3 &&
     (BONUS_WORDS_SET.has(currentSelectionWord) || BONUS_WORDS_SET.has(reversedSelectionWord)) &&
-    !category.words.includes(currentSelectionWord) &&
+    !targetWords.includes(currentSelectionWord) &&
     !foundBonusWords.includes(currentSelectionWord),
   );
 
   return (
     <div
       id="game-screen"
-      className="flex flex-col flex-1 w-full px-3 py-2 max-w-lg mx-auto select-none justify-between"
+      className="flex flex-col flex-1 w-full px-3 py-2 max-w-lg mx-auto select-none justify-between overflow-y-auto"
       onPointerUp={handleDragEnd}
       onPointerCancel={handleDragEnd}
     >
       {/* Top Bar */}
-      <div id="game-top-bar" className="flex items-center justify-between gap-2 pb-2">
+      <div id="game-top-bar" className="flex items-center justify-between gap-2 pb-1.5">
         {/* Back button */}
         <button
           id="game-back-btn"
@@ -448,26 +491,28 @@ export function GameScreen({
             playButtonTap();
             onBack();
           }}
-          className="p-2 rounded-full bg-white shadow-xs border border-zinc-200 text-zinc-700 hover:text-zinc-950 transition-all active:scale-95"
-          title="Exit to Categories"
+          className="p-2 rounded-full bg-white dark:bg-slate-900 shadow-xs border border-zinc-200 dark:border-slate-800 text-zinc-700 dark:text-slate-300 hover:text-zinc-950 dark:hover:text-white transition-all active:scale-95"
+          title="Back"
         >
           <ArrowLeft className="w-4 h-4" />
         </button>
 
-        {/* Category Name pill */}
+        {/* Puzzle Name / Level Pill */}
         <div
           id="game-category-pill"
-          className="flex items-center gap-1.5 px-3 py-1.5 rounded-full bg-white shadow-xs border border-zinc-200 font-bold text-sm text-zinc-800"
+          className="flex items-center gap-1.5 px-3 py-1 rounded-full bg-white dark:bg-slate-900 shadow-xs border border-zinc-200 dark:border-slate-800 font-bold text-xs sm:text-sm text-zinc-800 dark:text-slate-100 transition-colors"
         >
-          <span className="text-base">{category.emoji}</span>
-          <span>{category.name}</span>
+          <span className="text-sm sm:text-base">{activeTarget.emoji}</span>
+          <span className="truncate max-w-[140px] sm:max-w-[200px]">
+            {level ? `Level ${level.levelNumber}: ${level.title}` : (category?.name ?? '')}
+          </span>
         </div>
 
-        {/* Right side controls: Sound & Coins */}
-        <div className="flex items-center gap-2">
+        {/* Right side controls: Theme, Sound & Coins */}
+        <div className="flex items-center gap-1.5">
           <div
             id="game-coins-pill"
-            className="flex items-center gap-1 px-2.5 py-1 rounded-full bg-white shadow-xs border border-zinc-200 text-xs font-bold text-zinc-800"
+            className="flex items-center gap-1 px-2.5 py-1 rounded-full bg-white dark:bg-slate-900 shadow-xs border border-zinc-200 dark:border-slate-800 text-xs font-bold text-zinc-800 dark:text-slate-100 transition-colors"
           >
             <div className="w-3.5 h-3.5 rounded-full bg-amber-400 flex items-center justify-center text-amber-950">
               <Coins className="w-2.5 h-2.5" />
@@ -475,30 +520,54 @@ export function GameScreen({
             <span className="font-mono">{coins}</span>
           </div>
 
+          <ThemeToggle
+            theme={theme}
+            onToggle={onToggleTheme}
+            id="game-theme-toggle-btn"
+            className="p-1.5"
+          />
+
           <button
             id="game-sound-btn"
             onClick={() => {
               playButtonTap();
               onToggleSound();
             }}
-            className="p-2 rounded-full bg-white shadow-xs border border-zinc-200 text-zinc-600 hover:text-zinc-950 transition-all active:scale-95"
+            className="p-1.5 sm:p-2 rounded-full bg-white dark:bg-slate-900 shadow-xs border border-zinc-200 dark:border-slate-800 text-zinc-600 dark:text-slate-300 hover:text-zinc-950 dark:hover:text-white transition-all active:scale-95"
           >
-            {soundEnabled ? <Volume2 className="w-4 h-4" /> : <VolumeX className="w-4 h-4 text-zinc-400" />}
+            {soundEnabled ? <Volume2 className="w-4 h-4" /> : <VolumeX className="w-4 h-4 text-zinc-400 dark:text-slate-500" />}
           </button>
         </div>
       </div>
 
+      {/* Cognitive Perk & Tier Banner if in Level Mode */}
+      {level && (
+        <div
+          id="game-level-perk-banner"
+          className="mb-1.5 px-3 py-1 rounded-xl bg-blue-50 dark:bg-blue-950/40 border border-blue-200/80 dark:border-blue-900/50 flex items-center justify-between text-xs"
+        >
+          <div className="flex items-center gap-1.5 text-blue-800 dark:text-blue-300 font-bold truncate">
+            <Brain className="w-3.5 h-3.5 shrink-0 text-blue-600 dark:text-blue-400" />
+            <span className="truncate">{level.tier} • {level.brainPerk}</span>
+          </div>
+          <div className="flex items-center gap-1 text-[11px] text-zinc-500 dark:text-slate-400 font-medium shrink-0 pl-2">
+            <Star className="w-3 h-3 fill-amber-400 text-amber-500" />
+            <span>&lt;{level.targetSeconds}s</span>
+          </div>
+        </div>
+      )}
+
       {/* Stats Bar: Score, Timer, Hint Button */}
       <div
         id="game-status-bar"
-        className="flex items-center justify-between px-3 py-2 rounded-2xl bg-white shadow-xs border border-zinc-200/80 mb-2"
+        className="flex items-center justify-between px-3 py-1.5 rounded-2xl bg-white dark:bg-slate-900 shadow-xs border border-zinc-200/80 dark:border-slate-800 mb-1.5 transition-colors"
       >
         {/* Score Counter */}
         <div className="relative flex flex-col">
-          <span className="text-[10px] text-zinc-400 font-bold uppercase tracking-wider">
+          <span className="text-[10px] text-zinc-400 dark:text-slate-500 font-bold uppercase tracking-wider">
             Score
           </span>
-          <span className="font-mono font-black text-lg text-zinc-900 leading-tight">
+          <span className="font-mono font-black text-base sm:text-lg text-zinc-900 dark:text-slate-100 leading-tight">
             {score}
           </span>
           {scorePop && (
@@ -517,7 +586,7 @@ export function GameScreen({
           className={`flex items-center gap-1.5 px-3 py-1 rounded-full border text-xs font-bold transition-colors ${
             mode === 'time' && timeRemaining < 30
               ? 'bg-red-500/30 text-red-300 border-red-500/50 animate-pulse'
-              : 'bg-zinc-100 text-zinc-700 border-zinc-200'
+              : 'bg-zinc-100 dark:bg-slate-800 text-zinc-700 dark:text-slate-200 border-zinc-200 dark:border-slate-700'
           }`}
         >
           {mode === 'time' ? (
@@ -527,34 +596,34 @@ export function GameScreen({
               }`}
             />
           ) : (
-            <span className="text-[11px] text-zinc-500 font-mono">⏱️</span>
+            <span className="text-[11px] text-zinc-500 dark:text-slate-400 font-mono">⏱️</span>
           )}
-          <span className="font-mono text-sm">
+          <span className="font-mono text-xs sm:text-sm">
             {mode === 'classic' ? formatTime(elapsedSeconds) : formatTime(timeRemaining)}
           </span>
         </div>
 
-        {/* Hint Button with Red Badge */}
+        {/* Hint Button */}
         <div className="relative">
           <button
             id="game-hint-button"
             onClick={handleHintClick}
-            className={`flex items-center gap-1 px-3 py-1.5 rounded-xl border font-bold text-xs shadow-xs transition-all active:scale-95 ${
+            className={`flex items-center gap-1 px-3 py-1 rounded-xl border font-bold text-xs shadow-xs transition-all active:scale-95 ${
               hintsRemaining > 0
-                ? 'bg-amber-50 text-amber-900 border-amber-300 hover:bg-amber-100'
-                : 'bg-zinc-100 text-zinc-500 border-zinc-300 hover:bg-zinc-200'
+                ? 'bg-amber-50 dark:bg-amber-950/60 text-amber-900 dark:text-amber-200 border-amber-300 dark:border-amber-700/60 hover:bg-amber-100 dark:hover:bg-amber-900/60'
+                : 'bg-zinc-100 dark:bg-slate-800 text-zinc-500 dark:text-slate-400 border-zinc-300 dark:border-slate-700 hover:bg-zinc-200 dark:hover:bg-slate-700'
             }`}
             title={hintsRemaining > 0 ? 'Use a Hint' : 'Watch Ad for +2 Hints'}
           >
             <Lightbulb
-              className={`w-4 h-4 ${
-                hintsRemaining > 0 ? 'text-amber-500 fill-amber-400' : 'text-zinc-400'
+              className={`w-3.5 h-3.5 ${
+                hintsRemaining > 0 ? 'text-amber-500 fill-amber-400' : 'text-zinc-400 dark:text-slate-500'
               }`}
             />
             <span>{hintsRemaining > 0 ? 'Hint' : '+2 Hints'}</span>
           </button>
 
-          {/* Red Badge */}
+          {/* Badge */}
           <span
             id="game-hint-badge"
             className="absolute -top-1.5 -right-1.5 w-4 h-4 rounded-full bg-red-500 text-white text-[10px] font-black flex items-center justify-center shadow-xs"
@@ -563,6 +632,17 @@ export function GameScreen({
           </span>
         </div>
       </div>
+
+      {/* Combo Toast Banner */}
+      {comboToast && (
+        <div
+          id="combo-toast-banner"
+          className="mx-auto mb-1 px-3.5 py-1 rounded-full bg-linear-to-r from-amber-500 to-orange-500 text-white font-black text-xs shadow-md flex items-center gap-1.5 animate-in fade-in zoom-in-95 duration-200"
+        >
+          <Flame className="w-3.5 h-3.5 fill-white" />
+          <span>{comboToast}</span>
+        </div>
+      )}
 
       {/* Bonus Word Toast */}
       {bonusToast && (
@@ -623,7 +703,7 @@ export function GameScreen({
         <div
           id="word-search-grid"
           ref={gridRef}
-          className="relative grid p-2 rounded-2xl bg-white shadow-md border border-zinc-200/90 touch-none select-none"
+          className="relative grid p-2 rounded-2xl bg-white dark:bg-slate-900 shadow-md border border-zinc-200/90 dark:border-slate-800 touch-none select-none transition-colors"
           style={{
             gridTemplateColumns: `repeat(${puzzle.size}, minmax(0, 1fr))`,
             gap: puzzle.size >= 12 ? '2px' : '4px',
@@ -786,8 +866,8 @@ export function GameScreen({
                       : isHinting
                       ? 'text-amber-950 scale-110 shadow-md ring-2 ring-amber-400 hint-flash-animation'
                       : foundColors.length > 0
-                      ? 'text-zinc-950 font-black'
-                      : 'text-zinc-700 hover:bg-zinc-100/80 active:scale-95'
+                      ? 'text-zinc-950 dark:text-white font-black'
+                      : 'text-zinc-700 dark:text-slate-200 hover:bg-zinc-100/80 dark:hover:bg-slate-800/80 active:scale-95'
                   } ${isSelectionHead ? 'ring-2 ring-white/80 shadow-md scale-115' : ''}`}
                 >
                   {letter}
@@ -801,23 +881,23 @@ export function GameScreen({
       {/* Word List Panel */}
       <div
         id="word-list-panel"
-        className="w-full mt-2 p-3 rounded-2xl bg-white shadow-xs border border-zinc-200/80 flex flex-col"
+        className="w-full mt-1.5 p-2.5 rounded-2xl bg-white dark:bg-slate-900 shadow-xs border border-zinc-200/80 dark:border-slate-800 flex flex-col transition-colors"
       >
-        <div className="flex items-center justify-between mb-2">
-          <span className="text-xs font-bold text-zinc-800">
-            Hidden Words ({foundWords.length} / {category.words.length})
+        <div className="flex items-center justify-between mb-1.5">
+          <span className="text-xs font-bold text-zinc-800 dark:text-slate-100">
+            Hidden Words ({foundWords.length} / {targetWords.length})
           </span>
-          <span className="text-[11px] text-zinc-400 font-medium">
-            {category.words.length - foundWords.length} left
+          <span className="text-[11px] text-zinc-400 dark:text-slate-500 font-medium">
+            {targetWords.length - foundWords.length} left
           </span>
         </div>
 
         {/* Scrollable / wrap grid of words */}
         <div
           id="word-chips-container"
-          className="flex flex-wrap gap-1.5 max-h-28 overflow-y-auto pr-1"
+          className="flex flex-wrap gap-1.5 max-h-24 overflow-y-auto pr-1"
         >
-          {category.words.map((word) => {
+          {targetWords.map((word) => {
             const foundObj = foundWords.find((fw) => fw.word === word);
             const isFound = Boolean(foundObj);
 
@@ -827,8 +907,8 @@ export function GameScreen({
                 id={`word-badge-${word}`}
                 className={`px-2.5 py-1 rounded-lg text-xs font-mono font-bold transition-all duration-200 flex items-center gap-1.5 ${
                   isFound
-                    ? 'line-through text-[#c0c0c8] bg-zinc-100/90 border border-zinc-200/60'
-                    : 'text-[#1a1a1a] bg-zinc-50 border border-zinc-200 shadow-2xs'
+                    ? 'line-through text-[#c0c0c8] dark:text-slate-600 bg-zinc-100/90 dark:bg-slate-800/40 border border-zinc-200/60 dark:border-slate-800'
+                    : 'text-[#1a1a1a] dark:text-slate-200 bg-zinc-50 dark:bg-slate-800 border border-zinc-200 dark:border-slate-700 shadow-2xs'
                 }`}
                 style={
                   isFound && foundObj?.color
@@ -852,24 +932,24 @@ export function GameScreen({
           id="game-over-modal"
           className="fixed inset-0 z-50 flex items-center justify-center bg-black/60 backdrop-blur-xs p-4"
         >
-          <div className="w-full max-w-sm p-6 rounded-3xl bg-white shadow-2xl text-center border border-zinc-200 animate-in zoom-in-95">
-            <div className="w-16 h-16 rounded-2xl bg-red-100 text-red-600 flex items-center justify-center mx-auto mb-3 text-3xl">
+          <div className="w-full max-w-sm p-6 rounded-3xl bg-white dark:bg-slate-900 shadow-2xl text-center border border-zinc-200 dark:border-slate-800 animate-in zoom-in-95 transition-colors">
+            <div className="w-16 h-16 rounded-2xl bg-red-100 dark:bg-red-950/60 text-red-600 dark:text-red-400 flex items-center justify-center mx-auto mb-3 text-3xl">
               ⏰
             </div>
-            <h3 className="text-xl font-black text-zinc-900 mb-1">Time's Up!</h3>
-            <p className="text-xs text-zinc-500 mb-4">
-              You found {foundWords.length} of {category.words.length} words before time ran out.
+            <h3 className="text-xl font-black text-zinc-900 dark:text-slate-100 mb-1">Time's Up!</h3>
+            <p className="text-xs text-zinc-500 dark:text-slate-400 mb-4">
+              You found {foundWords.length} of {targetWords.length} words before time ran out.
             </p>
 
-            <div className="p-3 rounded-xl bg-zinc-50 border border-zinc-200 mb-5 flex justify-around">
+            <div className="p-3 rounded-xl bg-zinc-50 dark:bg-slate-800/70 border border-zinc-200 dark:border-slate-700 mb-5 flex justify-around">
               <div>
-                <div className="text-[10px] text-zinc-400 uppercase font-bold">Score</div>
-                <div className="font-mono font-bold text-base text-zinc-800">{score}</div>
+                <div className="text-[10px] text-zinc-400 dark:text-slate-500 uppercase font-bold">Score</div>
+                <div className="font-mono font-bold text-base text-zinc-800 dark:text-slate-100">{score}</div>
               </div>
-              <div className="w-px bg-zinc-200" />
+              <div className="w-px bg-zinc-200 dark:bg-slate-700" />
               <div>
-                <div className="text-[10px] text-zinc-400 uppercase font-bold">Bonus Words</div>
-                <div className="font-mono font-bold text-base text-amber-600">
+                <div className="text-[10px] text-zinc-400 dark:text-slate-500 uppercase font-bold">Bonus Words</div>
+                <div className="font-mono font-bold text-base text-amber-600 dark:text-amber-400">
                   {foundBonusWords.length}
                 </div>
               </div>
@@ -881,14 +961,14 @@ export function GameScreen({
                   playButtonTap();
                   onBack();
                 }}
-                className="flex-1 py-3 rounded-xl bg-zinc-100 hover:bg-zinc-200 text-zinc-700 font-bold text-xs transition-all"
+                className="flex-1 py-3 rounded-xl bg-zinc-100 dark:bg-slate-800 hover:bg-zinc-200 dark:hover:bg-slate-700 text-zinc-700 dark:text-slate-200 font-bold text-xs transition-all"
               >
-                Categories
+                Back
               </button>
               <button
                 onClick={() => {
                   playButtonTap();
-                  setPuzzle(generatePuzzle(category));
+                  setPuzzle(generatePuzzle(activeTarget));
                   setFoundWords([]);
                   setFoundBonusWords([]);
                   setScore(0);

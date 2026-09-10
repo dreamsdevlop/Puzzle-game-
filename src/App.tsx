@@ -1,11 +1,13 @@
 import { useEffect, useState } from 'react';
-import { Category, GameMode, Screen } from './types.ts';
+import { Category, GameMode, LevelDef, LevelStarRecord, Screen, Theme } from './types.ts';
 import { CATEGORIES } from './data/categories.ts';
+import { calculateBrainRank, getLevelDef } from './data/levels.ts';
 import { setAudioEnabled } from './utils/audio.ts';
 import { Storage } from './utils/storage.ts';
 import { AdModal } from './components/AdModal.tsx';
 import { BannerAd } from './components/BannerAd.tsx';
 import { HomeScreen } from './components/HomeScreen.tsx';
+import { LevelJourneyScreen } from './components/LevelJourneyScreen.tsx';
 import { CategorySelectScreen } from './components/CategorySelectScreen.tsx';
 import { ModeSelectScreen } from './components/ModeSelectScreen.tsx';
 import { GameScreen } from './components/GameScreen.tsx';
@@ -20,11 +22,22 @@ export default function App() {
   const [completedLevels, setCompletedLevels] = useState<string[]>(() =>
     Storage.getCompletedLevels(),
   );
+  const [levelProgress, setLevelProgress] = useState<Record<number, LevelStarRecord>>(() =>
+    Storage.getLevelProgress(),
+  );
+  const [claimedMilestones, setClaimedMilestones] = useState<number[]>(() =>
+    Storage.getClaimedMilestones(),
+  );
+  const [highestUnlockedLevel, setHighestUnlockedLevel] = useState<number>(() =>
+    Storage.getHighestUnlockedLevel(),
+  );
   const [soundEnabled, setSoundEnabledState] = useState(() =>
     Storage.getSoundEnabled(),
   );
+  const [theme, setThemeState] = useState<Theme>(() => Storage.getTheme());
 
   // Gameplay configuration
+  const [currentLevel, setCurrentLevel] = useState<LevelDef | null>(null);
   const [selectedCategory, setSelectedCategory] = useState<Category>(
     CATEGORIES[0],
   );
@@ -37,6 +50,7 @@ export default function App() {
     bonusWords: string[];
     timeLeftSeconds: number;
     coinsEarned: number;
+    stars: number;
   } | null>(null);
 
   // AdMob Modal State
@@ -50,10 +64,28 @@ export default function App() {
     type: 'interstitial',
   });
 
+  // Calculate brain stats dynamically
+  const completedLevelCount = Object.keys(levelProgress).length;
+  const totalStars: number = (Object.values(levelProgress) as LevelStarRecord[]).reduce(
+    (acc: number, curr: LevelStarRecord) => acc + (curr?.stars || 0),
+    0,
+  );
+  const brainRank = calculateBrainRank(completedLevelCount, totalStars);
+
   // Sync initial sound state
   useEffect(() => {
     setAudioEnabled(soundEnabled);
   }, [soundEnabled]);
+
+  // Sync theme with HTML document
+  useEffect(() => {
+    if (theme === 'dark') {
+      document.documentElement.classList.add('dark');
+    } else {
+      document.documentElement.classList.remove('dark');
+    }
+    Storage.setTheme(theme);
+  }, [theme]);
 
   const handleToggleSound = () => {
     const updated = !soundEnabled;
@@ -62,12 +94,35 @@ export default function App() {
     Storage.setSoundEnabled(updated);
   };
 
+  const handleToggleTheme = () => {
+    setThemeState((prev) => (prev === 'dark' ? 'light' : 'dark'));
+  };
+
   // Navigations
+  const handleGoToLevelJourney = () => {
+    setScreen('level_map');
+  };
+
   const handleGoToCategorySelect = () => {
+    setCurrentLevel(null);
     setScreen('category_select');
   };
 
+  const handleSelectLevel = (level: LevelDef) => {
+    setCurrentLevel(level);
+    setSelectedMode('classic');
+    setScreen('game');
+  };
+
+  const handleClaimMilestone = (levelNumber: number, rewardCoins: number) => {
+    const updatedClaimed = Storage.claimMilestone(levelNumber);
+    setClaimedMilestones(updatedClaimed);
+    const updatedCoins = Storage.addCoins(rewardCoins);
+    setCoins(updatedCoins);
+  };
+
   const handleSelectCategory = (category: Category) => {
+    setCurrentLevel(null);
     setSelectedCategory(category);
     setScreen('mode_select');
   };
@@ -82,23 +137,48 @@ export default function App() {
     timeTakenSeconds: number;
     bonusWords: string[];
     timeLeftSeconds: number;
+    stars: number;
   }) => {
-    // Earn +50 coins per completed level
-    const updatedCoins = Storage.addCoins(50);
-    setCoins(updatedCoins);
+    if (currentLevel) {
+      // Level mode completion
+      const earnedStars = data.stars || 1;
+      const { newStarsEarned } = Storage.saveLevelProgress(
+        currentLevel.levelNumber,
+        earnedStars,
+        data.score,
+        data.timeTakenSeconds,
+      );
 
-    // Unlock next level by saving completed level ID
-    const updatedLevels = Storage.markLevelCompleted(selectedCategory.id);
-    setCompletedLevels(updatedLevels);
+      const coinReward = currentLevel.coinReward + newStarsEarned * 10;
+      const updatedCoins = Storage.addCoins(coinReward);
+      setCoins(updatedCoins);
 
-    setResultsData({
-      ...data,
-      coinsEarned: 50,
-    });
+      setLevelProgress(Storage.getLevelProgress());
+      setHighestUnlockedLevel(Storage.getHighestUnlockedLevel());
+
+      setResultsData({
+        ...data,
+        coinsEarned: coinReward,
+        stars: earnedStars,
+      });
+    } else {
+      // Category mode completion
+      const updatedCoins = Storage.addCoins(50);
+      setCoins(updatedCoins);
+
+      const updatedLevels = Storage.markLevelCompleted(selectedCategory.id);
+      setCompletedLevels(updatedLevels);
+
+      setResultsData({
+        ...data,
+        coinsEarned: 50,
+        stars: 3,
+      });
+    }
+
     setScreen('results');
 
     // Check interstitial frequency cap
-    // "show every 2nd eligible trigger, minimum 60-second interval"
     if (Storage.shouldShowInterstitial()) {
       setTimeout(() => {
         setAdModal({
@@ -121,9 +201,15 @@ export default function App() {
     setScreen('game');
   };
 
-  const handleNextLevel = (nextCat: Category) => {
-    setSelectedCategory(nextCat);
-    setScreen('mode_select');
+  const handleNextLevel = (nextLevelOrCategory: LevelDef | Category) => {
+    if ('levelNumber' in nextLevelOrCategory) {
+      setCurrentLevel(nextLevelOrCategory);
+      setScreen('game');
+    } else {
+      setCurrentLevel(null);
+      setSelectedCategory(nextLevelOrCategory);
+      setScreen('mode_select');
+    }
   };
 
   const handleGoHome = () => {
@@ -133,17 +219,38 @@ export default function App() {
   return (
     <main
       id="app-root"
-      className="min-h-screen bg-[#f0f0f3] text-[#1a1a1a] flex flex-col font-sans transition-colors"
+      className="min-h-screen bg-[#f0f0f3] dark:bg-slate-950 text-[#1a1a1a] dark:text-slate-100 flex flex-col font-sans transition-colors"
     >
       {/* Active Screen Component */}
       {screen === 'home' && (
         <HomeScreen
           coins={coins}
-          completedCount={completedLevels.length}
+          highestUnlockedLevel={highestUnlockedLevel}
+          totalStars={totalStars}
+          brainRankTitle={brainRank.rankTitle}
+          completedCategoriesCount={completedLevels.length}
           totalCategories={CATEGORIES.length}
           soundEnabled={soundEnabled}
+          theme={theme}
           onToggleSound={handleToggleSound}
-          onPlayClick={handleGoToCategorySelect}
+          onToggleTheme={handleToggleTheme}
+          onPlayLevelJourney={handleGoToLevelJourney}
+          onPlayCategories={handleGoToCategorySelect}
+        />
+      )}
+
+      {screen === 'level_map' && (
+        <LevelJourneyScreen
+          coins={coins}
+          levelProgress={levelProgress}
+          claimedMilestones={claimedMilestones}
+          highestUnlockedLevel={highestUnlockedLevel}
+          theme={theme}
+          onToggleTheme={handleToggleTheme}
+          onSelectLevel={handleSelectLevel}
+          onClaimMilestone={handleClaimMilestone}
+          onBack={handleGoHome}
+          onSwitchToCategories={handleGoToCategorySelect}
         />
       )}
 
@@ -151,6 +258,8 @@ export default function App() {
         <CategorySelectScreen
           coins={coins}
           completedLevels={completedLevels}
+          theme={theme}
+          onToggleTheme={handleToggleTheme}
           onSelectCategory={handleSelectCategory}
           onBack={handleGoHome}
         />
@@ -159,6 +268,8 @@ export default function App() {
       {screen === 'mode_select' && (
         <ModeSelectScreen
           category={selectedCategory}
+          theme={theme}
+          onToggleTheme={handleToggleTheme}
           onSelectMode={handleSelectMode}
           onBack={handleGoToCategorySelect}
         />
@@ -166,20 +277,31 @@ export default function App() {
 
       {screen === 'game' && (
         <GameScreen
-          category={selectedCategory}
+          category={currentLevel ? undefined : selectedCategory}
+          level={currentLevel || undefined}
           mode={selectedMode}
           coins={coins}
           soundEnabled={soundEnabled}
+          theme={theme}
           onToggleSound={handleToggleSound}
+          onToggleTheme={handleToggleTheme}
           onLevelComplete={handleLevelComplete}
-          onBack={handleGoToCategorySelect}
+          onBack={() => {
+            if (currentLevel) {
+              setScreen('level_map');
+            } else {
+              setScreen('category_select');
+            }
+          }}
           onRequestRewardedAd={handleRequestRewardedAd}
         />
       )}
 
       {screen === 'results' && resultsData && (
         <ResultsScreen
-          category={selectedCategory}
+          category={currentLevel ? undefined : selectedCategory}
+          level={currentLevel || undefined}
+          stars={resultsData.stars}
           mode={selectedMode}
           score={resultsData.score}
           timeTakenSeconds={resultsData.timeTakenSeconds}
@@ -187,8 +309,11 @@ export default function App() {
           timeLeftSeconds={resultsData.timeLeftSeconds}
           coinsEarned={resultsData.coinsEarned}
           totalCoins={coins}
+          theme={theme}
+          onToggleTheme={handleToggleTheme}
           onPlayAgain={handlePlayAgain}
           onNextLevel={handleNextLevel}
+          onGoToLevelMap={() => setScreen('level_map')}
           onHome={handleGoHome}
         />
       )}

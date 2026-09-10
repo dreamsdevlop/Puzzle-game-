@@ -288,3 +288,8 @@ export function playSlideLetterTick(letterCount: number = 1) {
   osc.start(now);
   osc.stop(now + 0.045);
 }
+
+// 10. Level Win sound for progression journey
+export function playLevelWin() {
+  playVictoryFanfare();
+}

@@ -1,6 +1,42 @@
 export type GameMode = 'classic' | 'time';
 
-export type Screen = 'home' | 'category_select' | 'mode_select' | 'game' | 'results';
+export type Screen = 'home' | 'category_select' | 'level_map' | 'mode_select' | 'game' | 'results';
+
+export type Theme = 'light' | 'dark';
+
+export type DifficultyTier = 'Warm-Up' | 'Pattern Hunter' | 'Focus & Flow' | 'Synapse Surge' | 'Cognitive Master' | 'Genius Mind';
+
+export interface LevelDef {
+  levelNumber: number;
+  title: string;
+  theme: string;
+  emoji: string;
+  tier: DifficultyTier;
+  stage: number;
+  gridSize: number;
+  words: string[];
+  allowedDirections: [number, number][];
+  brainPerk: string;
+  targetSeconds: number; // reference for 3 stars
+  coinReward: number;
+  milestone?: boolean;
+}
+
+export interface LevelStarRecord {
+  stars: number; // 1, 2, or 3
+  bestScore: number;
+  bestTimeSeconds: number;
+  completedAt: number;
+}
+
+export interface BrainStats {
+  sharpnessRating: number; // e.g. 100 - 300+
+  brainRank: string; // e.g. "Novice Observer", "Pattern Hunter", etc.
+  totalWordsFound: number;
+  bestCombo: number;
+  levelsCompletedCount: number;
+  threeStarCount: number;
+}
 
 export interface Category {
   id: string;
