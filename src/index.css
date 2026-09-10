@@ -1,0 +1,33 @@
+@import "tailwindcss";
+
+html, body {
+  margin: 0;
+  padding: 0;
+  background-color: #f0f0f3;
+  color: #1a1a1a;
+  -webkit-font-smoothing: antialiased;
+  -moz-osx-font-smoothing: grayscale;
+  user-select: none;
+  -webkit-user-select: none;
+}
+
+#word-search-grid {
+  touch-action: none;
+}
+
+@keyframes hint-pulse-3x {
+  0%, 100% {
+    background-color: rgba(250, 204, 21, 0.3);
+    transform: scale(1);
+  }
+  50% {
+    background-color: rgba(250, 204, 21, 0.95);
+    transform: scale(1.1);
+    box-shadow: 0 0 12px rgba(250, 204, 21, 0.9);
+  }
+}
+
+.hint-flash-animation {
+  animation: hint-pulse-3x 0.5s ease-in-out 3;
+}
+

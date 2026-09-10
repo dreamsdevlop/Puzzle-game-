@@ -1,0 +1,8 @@
+{
+  "appId": "com.wordsearch.puzzle",
+  "appName": "Word Search",
+  "webDir": "dist",
+  "server": {
+    "androidScheme": "https"
+  }
+}
