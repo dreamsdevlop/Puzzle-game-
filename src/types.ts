@@ -1,4 +1,4 @@
-export type GameMode = 'classic' | 'time';
+export type GameMode = 'classic' | 'time' | 'daily';
 
 export type Screen = 'home' | 'category_select' | 'level_map' | 'mode_select' | 'game' | 'results';
 
@@ -46,6 +46,40 @@ export interface LevelStarRecord {
   bestScore: number;
   bestTimeSeconds: number;
   completedAt: number;
+}
+
+export interface DailyChallengeDef {
+  isDaily: true;
+  dateKey: string; // 'YYYY-MM-DD'
+  formattedDate: string; // e.g. 'Friday, Sep 11'
+  dayOfWeek: string;
+  theme: string;
+  emoji: string;
+  tier: DifficultyTier;
+  gridSize: number;
+  words: string[];
+  allowedDirections: [number, number][];
+  brainPerk: string;
+  targetSeconds: number;
+  coinReward: number;
+  sequenceId: string;
+}
+
+export interface DailyChallengeRecord {
+  dateKey: string;
+  completed: boolean;
+  score: number;
+  timeTakenSeconds: number;
+  stars: number;
+  completedAt: number;
+}
+
+export interface DailyStreakInfo {
+  currentStreak: number;
+  bestStreak: number;
+  lastCompletedDate: string | null;
+  totalCompleted: number;
+  isCompletedToday: boolean;
 }
 
 export interface BrainStats {

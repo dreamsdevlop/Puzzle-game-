@@ -7,7 +7,7 @@
  * - adFrequencyState
  */
 
-import { AudioSettings, LevelStarRecord, MusicTrackId, Theme } from '../types.ts';
+import { AudioSettings, DailyChallengeRecord, DailyStreakInfo, LevelStarRecord, MusicTrackId, Theme } from '../types.ts';
 
 const STORAGE_KEYS = {
   COINS: '@word_search_coins',
@@ -23,6 +23,8 @@ const STORAGE_KEYS = {
   HAPTICS_ENABLED: '@word_search_haptics_enabled',
   THEME: '@word_search_theme',
   AD_STATE: '@word_search_ad_state',
+  DAILY_RECORDS: '@word_search_daily_records',
+  DAILY_STREAK: '@word_search_daily_streak',
 };
 
 export interface AdState {
@@ -368,5 +370,146 @@ export const Storage = {
       lastInterstitialTimestamp: state.lastInterstitialTimestamp,
     });
     return false;
+  },
+
+  // ==================== DAILY CHALLENGE PERSISTENCE ====================
+  getDailyRecords(): Record<string, DailyChallengeRecord> {
+    try {
+      const saved = localStorage.getItem(STORAGE_KEYS.DAILY_RECORDS);
+      if (saved) {
+        return JSON.parse(saved);
+      }
+    } catch {
+      // fallback
+    }
+    return {};
+  },
+
+  getDailyRecord(dateKey: string): DailyChallengeRecord | null {
+    const records = this.getDailyRecords();
+    return records[dateKey] || null;
+  },
+
+  getDailyStreak(todayDateKey: string): DailyStreakInfo {
+    let currentStreak = 0;
+    let bestStreak = 0;
+    let lastCompletedDate: string | null = null;
+    let totalCompleted = 0;
+
+    try {
+      const raw = localStorage.getItem(STORAGE_KEYS.DAILY_STREAK);
+      if (raw) {
+        const parsed = JSON.parse(raw);
+        currentStreak = typeof parsed.currentStreak === 'number' ? parsed.currentStreak : 0;
+        bestStreak = typeof parsed.bestStreak === 'number' ? parsed.bestStreak : 0;
+        lastCompletedDate = parsed.lastCompletedDate || null;
+        totalCompleted = typeof parsed.totalCompleted === 'number' ? parsed.totalCompleted : 0;
+      }
+    } catch {
+      // fallback
+    }
+
+    // Determine if today is completed or streak has lapsed
+    let isCompletedToday = false;
+    if (lastCompletedDate === todayDateKey) {
+      isCompletedToday = true;
+    } else if (lastCompletedDate) {
+      // Check if lastCompletedDate was yesterday
+      const [y, m, d] = todayDateKey.split('-').map(Number);
+      const yesterday = new Date(y, m - 1, d);
+      yesterday.setDate(yesterday.getDate() - 1);
+      const yKey = `${yesterday.getFullYear()}-${String(yesterday.getMonth() + 1).padStart(2, '0')}-${String(yesterday.getDate()).padStart(2, '0')}`;
+
+      if (lastCompletedDate !== yKey) {
+        // Streak lapsed since it wasn't completed yesterday
+        currentStreak = 0;
+      }
+    }
+
+    return {
+      currentStreak,
+      bestStreak,
+      lastCompletedDate,
+      totalCompleted,
+      isCompletedToday,
+    };
+  },
+
+  saveDailyCompletion(record: DailyChallengeRecord): {
+    streak: number;
+    isFirstToday: boolean;
+    bonusCoins: number;
+  } {
+    const todayKey = record.dateKey;
+    const records = this.getDailyRecords();
+    const existing = records[todayKey];
+    const isFirstToday = !existing || !existing.completed;
+
+    // Save or update record with best score/time
+    records[todayKey] = {
+      dateKey: todayKey,
+      completed: true,
+      score: Math.max(existing?.score || 0, record.score),
+      timeTakenSeconds: existing
+        ? Math.min(existing.timeTakenSeconds, record.timeTakenSeconds)
+        : record.timeTakenSeconds,
+      stars: Math.max(existing?.stars || 0, record.stars),
+      completedAt: Date.now(),
+    };
+
+    try {
+      localStorage.setItem(STORAGE_KEYS.DAILY_RECORDS, JSON.stringify(records));
+    } catch {
+      // fallback
+    }
+
+    // Compute streak update
+    const currentStreakInfo = this.getDailyStreak(todayKey);
+    let newStreak = currentStreakInfo.currentStreak;
+    let bonusCoins = 0;
+
+    if (isFirstToday) {
+      if (currentStreakInfo.lastCompletedDate) {
+        const [y, m, d] = todayKey.split('-').map(Number);
+        const yesterday = new Date(y, m - 1, d);
+        yesterday.setDate(yesterday.getDate() - 1);
+        const yKey = `${yesterday.getFullYear()}-${String(yesterday.getMonth() + 1).padStart(2, '0')}-${String(yesterday.getDate()).padStart(2, '0')}`;
+
+        if (currentStreakInfo.lastCompletedDate === yKey) {
+          newStreak = currentStreakInfo.currentStreak + 1;
+        } else {
+          newStreak = 1;
+        }
+      } else {
+        newStreak = 1;
+      }
+
+      const updatedBestStreak = Math.max(currentStreakInfo.bestStreak, newStreak);
+      const updatedTotal = currentStreakInfo.totalCompleted + 1;
+
+      try {
+        localStorage.setItem(
+          STORAGE_KEYS.DAILY_STREAK,
+          JSON.stringify({
+            currentStreak: newStreak,
+            bestStreak: updatedBestStreak,
+            lastCompletedDate: todayKey,
+            totalCompleted: updatedTotal,
+          }),
+        );
+      } catch {
+        // fallback
+      }
+
+      // Base daily reward (120 coins) + streak bonus (10 coins per day up to 100 extra)
+      bonusCoins = 120 + Math.min(100, newStreak * 10);
+      this.addCoins(bonusCoins);
+    }
+
+    return {
+      streak: newStreak,
+      isFirstToday,
+      bonusCoins,
+    };
   },
 };

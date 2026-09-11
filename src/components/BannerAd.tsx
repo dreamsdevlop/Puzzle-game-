@@ -1,6 +1,6 @@
 import { useState } from 'react';
 import { ExternalLink, Info, X } from 'lucide-react';
-import { ADMOB_CONFIG } from './AdModal.tsx';
+import { AdMobManager } from '../utils/admob.ts';
 
 interface BannerAdProps {
   className?: string;
@@ -9,6 +9,8 @@ interface BannerAdProps {
 export function BannerAd({ className = '' }: BannerAdProps) {
   const [showInfo, setShowInfo] = useState(false);
   const [isDismissed, setIsDismissed] = useState(false);
+  const activeConfig = AdMobManager.getActiveConfig();
+  const isTest = AdMobManager.isTestMode();
 
   if (isDismissed) return null;
 
@@ -87,19 +89,22 @@ export function BannerAd({ className = '' }: BannerAdProps) {
           </div>
           <div className="flex justify-between font-mono">
             <span className="text-zinc-400">Ad Unit Name:</span>
-            <span className="text-white font-semibold">{ADMOB_CONFIG.bannerName}</span>
+            <span className="text-white font-semibold">
+              {activeConfig.bannerName}
+              {isTest && <span className="text-amber-400 font-normal ml-1">(Test)</span>}
+            </span>
           </div>
           <div className="flex justify-between font-mono">
             <span className="text-zinc-400">Banner Unit ID:</span>
-            <span className="text-emerald-400 truncate max-w-[200px]">{ADMOB_CONFIG.bannerId}</span>
+            <span className="text-emerald-400 truncate max-w-[200px]">{activeConfig.bannerId}</span>
           </div>
           <div className="flex justify-between font-mono">
             <span className="text-zinc-400">Publisher ID:</span>
-            <span className="text-zinc-300">{ADMOB_CONFIG.publisherId}</span>
+            <span className="text-zinc-300">{activeConfig.publisherId}</span>
           </div>
           <div className="flex justify-between font-mono">
             <span className="text-zinc-400">App Name / ID:</span>
-            <span className="text-zinc-300 truncate max-w-[200px]">{ADMOB_CONFIG.appName} ({ADMOB_CONFIG.appId})</span>
+            <span className="text-zinc-300 truncate max-w-[200px]">{activeConfig.appName} ({activeConfig.appId})</span>
           </div>
         </div>
       )}

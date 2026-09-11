@@ -1,8 +1,9 @@
-import { useEffect, useState } from 'react';
-import { Category, GameMode, LevelDef, LevelStarRecord, Screen, Theme } from './types.ts';
+import { useEffect, useMemo, useState } from 'react';
+import { Category, DailyChallengeDef, DailyStreakInfo, GameMode, LevelDef, LevelStarRecord, Screen, Theme } from './types.ts';
 import { CATEGORIES } from './data/categories.ts';
 import { calculateBrainRank, getLevelDef } from './data/levels.ts';
 import { initAudioSettings, setAudioEnabled } from './utils/audio.ts';
+import { getDailyChallengeForDate, getTodayDateKey } from './utils/dailyChallenge.ts';
 import { MusicEngine } from './utils/musicEngine.ts';
 import { Storage } from './utils/storage.ts';
 import { AdModal } from './components/AdModal.tsx';
@@ -19,6 +20,14 @@ export default function App() {
   // Navigation & Screen state
   const [screen, setScreen] = useState<Screen>('home');
   const [isSettingsOpen, setIsSettingsOpen] = useState(false);
+
+  // Today's Daily Challenge Definition & Streak State
+  const todayKey = useMemo(() => getTodayDateKey(), []);
+  const todayChallenge = useMemo(() => getDailyChallengeForDate(new Date()), []);
+  const [dailyStreak, setDailyStreak] = useState<DailyStreakInfo>(() =>
+    Storage.getDailyStreak(getTodayDateKey()),
+  );
+  const [activeDailyChallenge, setActiveDailyChallenge] = useState<DailyChallengeDef | null>(null);
 
   // Persistence State
   const [coins, setCoins] = useState(() => Storage.getCoins());
@@ -125,15 +134,25 @@ export default function App() {
 
   // Navigations
   const handleGoToLevelJourney = () => {
+    setActiveDailyChallenge(null);
     setScreen('level_map');
   };
 
   const handleGoToCategorySelect = () => {
     setCurrentLevel(null);
+    setActiveDailyChallenge(null);
     setScreen('category_select');
   };
 
+  const handlePlayDailyChallenge = () => {
+    setCurrentLevel(null);
+    setActiveDailyChallenge(todayChallenge);
+    setSelectedMode('daily');
+    setScreen('game');
+  };
+
   const handleSelectLevel = (level: LevelDef) => {
+    setActiveDailyChallenge(null);
     setCurrentLevel(level);
     setSelectedMode('classic');
     setScreen('game');
@@ -147,6 +166,7 @@ export default function App() {
   };
 
   const handleSelectCategory = (category: Category) => {
+    setActiveDailyChallenge(null);
     setCurrentLevel(null);
     setSelectedCategory(category);
     setScreen('mode_select');
@@ -164,7 +184,29 @@ export default function App() {
     timeLeftSeconds: number;
     stars: number;
   }) => {
-    if (currentLevel) {
+    if (activeDailyChallenge) {
+      // Daily Challenge completion
+      // Determine stars based on time: <= 90s = 3 stars, <= 150s = 2 stars, else 1 star
+      const earnedStars = data.timeTakenSeconds <= 90 ? 3 : data.timeTakenSeconds <= 150 ? 2 : 1;
+      const { streak, isFirstToday, bonusCoins } = Storage.saveDailyCompletion({
+        dateKey: activeDailyChallenge.dateKey,
+        completed: true,
+        score: data.score,
+        timeTakenSeconds: data.timeTakenSeconds,
+        stars: earnedStars,
+        completedAt: Date.now(),
+      });
+
+      setCoins(Storage.getCoins());
+      const updatedStreak = Storage.getDailyStreak(todayKey);
+      setDailyStreak(updatedStreak);
+
+      setResultsData({
+        ...data,
+        coinsEarned: bonusCoins > 0 ? bonusCoins : 50,
+        stars: earnedStars,
+      });
+    } else if (currentLevel) {
       // Level mode completion
       const earnedStars = data.stars || 1;
       const { newStarsEarned } = Storage.saveLevelProgress(
@@ -238,6 +280,7 @@ export default function App() {
   };
 
   const handleGoHome = () => {
+    setActiveDailyChallenge(null);
     setScreen('home');
   };
 
@@ -255,6 +298,8 @@ export default function App() {
           brainRankTitle={brainRank.rankTitle}
           completedCategoriesCount={completedLevels.length}
           totalCategories={CATEGORIES.length}
+          dailyStreak={dailyStreak}
+          todayChallenge={todayChallenge}
           soundEnabled={soundEnabled}
           theme={theme}
           onToggleSound={handleToggleSound}
@@ -262,6 +307,7 @@ export default function App() {
           onOpenSettings={() => setIsSettingsOpen(true)}
           onPlayLevelJourney={handleGoToLevelJourney}
           onPlayCategories={handleGoToCategorySelect}
+          onPlayDailyChallenge={handlePlayDailyChallenge}
         />
       )}
 
@@ -303,8 +349,9 @@ export default function App() {
 
       {screen === 'game' && (
         <GameScreen
-          category={currentLevel ? undefined : selectedCategory}
+          category={currentLevel || activeDailyChallenge ? undefined : selectedCategory}
           level={currentLevel || undefined}
+          dailyChallenge={activeDailyChallenge || undefined}
           mode={selectedMode}
           coins={coins}
           soundEnabled={soundEnabled}
@@ -314,7 +361,9 @@ export default function App() {
           onOpenSettings={() => setIsSettingsOpen(true)}
           onLevelComplete={handleLevelComplete}
           onBack={() => {
-            if (currentLevel) {
+            if (activeDailyChallenge) {
+              setScreen('home');
+            } else if (currentLevel) {
               setScreen('level_map');
             } else {
               setScreen('category_select');
@@ -326,8 +375,10 @@ export default function App() {
 
       {screen === 'results' && resultsData && (
         <ResultsScreen
-          category={currentLevel ? undefined : selectedCategory}
+          category={currentLevel || activeDailyChallenge ? undefined : selectedCategory}
           level={currentLevel || undefined}
+          dailyChallenge={activeDailyChallenge || undefined}
+          dailyStreak={dailyStreak.currentStreak}
           stars={resultsData.stars}
           mode={selectedMode}
           score={resultsData.score}
@@ -339,8 +390,8 @@ export default function App() {
           theme={theme}
           onToggleTheme={handleToggleTheme}
           onPlayAgain={handlePlayAgain}
-          onNextLevel={handleNextLevel}
-          onGoToLevelMap={() => setScreen('level_map')}
+          onNextLevel={activeDailyChallenge ? undefined : handleNextLevel}
+          onGoToLevelMap={activeDailyChallenge ? undefined : () => setScreen('level_map')}
           onHome={handleGoHome}
         />
       )}
@@ -361,12 +412,22 @@ export default function App() {
         }}
       />
 
-      {/* Audio, Music & General Settings Modal */}
+      {/* Audio, Music, PWA & AdMob Settings Modal */}
       <SettingsModal
         isOpen={isSettingsOpen}
         theme={theme}
         onToggleTheme={handleToggleTheme}
         onClose={() => setIsSettingsOpen(false)}
+        onTestAd={() => {
+          setAdModal({
+            isOpen: true,
+            type: 'rewarded',
+            onReward: () => {
+              const newCoins = Storage.addCoins(25);
+              setCoins(newCoins);
+            },
+          });
+        }}
       />
     </main>
   );

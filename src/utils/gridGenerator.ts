@@ -1,5 +1,6 @@
-import { Category, GridCoord, LevelDef, PlacedWord } from '../types.ts';
+import { Category, DailyChallengeDef, GridCoord, LevelDef, PlacedWord } from '../types.ts';
 import { getGridSizeForCategory } from '../data/categories.ts';
+import { generateDeterministicDailyPuzzle } from './dailyChallenge.ts';
 
 const DIRECTIONS: [number, number][] = [
   [0, 1],   // Right
@@ -18,7 +19,11 @@ export interface GeneratedPuzzle {
   placedWords: PlacedWord[];
 }
 
-export function generatePuzzle(target: Category | LevelDef): GeneratedPuzzle {
+export function generatePuzzle(target: Category | LevelDef | DailyChallengeDef): GeneratedPuzzle {
+  if ('isDaily' in target) {
+    return generateDeterministicDailyPuzzle(target);
+  }
+
   const isLevel = 'levelNumber' in target;
   const size = isLevel ? target.gridSize : getGridSizeForCategory(target);
   const words = [...target.words];

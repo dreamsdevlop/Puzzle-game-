@@ -1,6 +1,7 @@
 import { useEffect, useRef, useState, useTransition } from 'react';
 import {
   ArrowLeft,
+  Calendar,
   Check,
   Coins,
   Flame,
@@ -12,7 +13,7 @@ import {
   Volume2,
   VolumeX,
 } from 'lucide-react';
-import { Category, FoundWord, GameMode, GridCoord, LevelDef, PlacedWord, Theme } from '../types.ts';
+import { Category, DailyChallengeDef, FoundWord, GameMode, GridCoord, LevelDef, PlacedWord, Theme } from '../types.ts';
 import { HIGHLIGHT_COLORS } from '../data/colors.ts';
 import { BONUS_WORDS_SET } from '../data/bonusDictionary.ts';
 import {
@@ -38,6 +39,7 @@ import { Brain, Star } from 'lucide-react';
 interface GameScreenProps {
   category?: Category;
   level?: LevelDef;
+  dailyChallenge?: DailyChallengeDef;
   mode: GameMode;
   coins: number;
   soundEnabled: boolean;
@@ -59,6 +61,7 @@ interface GameScreenProps {
 export function GameScreen({
   category,
   level,
+  dailyChallenge,
   mode,
   coins,
   soundEnabled,
@@ -70,9 +73,10 @@ export function GameScreen({
   onBack,
   onRequestRewardedAd,
 }: GameScreenProps) {
-  const activeTarget = level || category!;
+  const activeTarget = dailyChallenge || level || category!;
   const targetWords = activeTarget.words;
   const isLevelMode = Boolean(level);
+  const isDaily = Boolean(dailyChallenge);
 
   // Puzzle Generation
   const [puzzle, setPuzzle] = useState(() => generatePuzzle(activeTarget));
@@ -504,11 +508,19 @@ export function GameScreen({
         {/* Puzzle Name / Level Pill */}
         <div
           id="game-category-pill"
-          className="flex items-center gap-1.5 px-3 py-1 rounded-full bg-white dark:bg-slate-900 shadow-xs border border-zinc-200 dark:border-slate-800 font-bold text-xs sm:text-sm text-zinc-800 dark:text-slate-100 transition-colors"
+          className={`flex items-center gap-1.5 px-3 py-1 rounded-full shadow-xs border font-bold text-xs sm:text-sm transition-colors ${
+            dailyChallenge
+              ? 'bg-amber-50 dark:bg-amber-950/70 border-amber-300 dark:border-amber-700/80 text-amber-950 dark:text-amber-200'
+              : 'bg-white dark:bg-slate-900 border-zinc-200 dark:border-slate-800 text-zinc-800 dark:text-slate-100'
+          }`}
         >
           <span className="text-sm sm:text-base">{activeTarget.emoji}</span>
           <span className="truncate max-w-[140px] sm:max-w-[200px]">
-            {level ? `Level ${level.levelNumber}: ${level.title}` : (category?.name ?? '')}
+            {dailyChallenge
+              ? `Daily: ${dailyChallenge.theme}`
+              : level
+              ? `Level ${level.levelNumber}: ${level.title}`
+              : (category?.name ?? '')}
           </span>
         </div>
 
@@ -558,8 +570,24 @@ export function GameScreen({
         </div>
       </div>
 
-      {/* Cognitive Perk & Tier Banner if in Level Mode */}
-      {level && (
+      {/* Cognitive Perk & Tier Banner if in Level Mode or Daily Challenge */}
+      {dailyChallenge && (
+        <div
+          id="game-daily-perk-banner"
+          className="mb-1.5 px-3 py-1 rounded-xl bg-amber-50 dark:bg-amber-950/40 border border-amber-200/80 dark:border-amber-900/50 flex items-center justify-between text-xs"
+        >
+          <div className="flex items-center gap-1.5 text-amber-800 dark:text-amber-300 font-bold truncate">
+            <Calendar className="w-3.5 h-3.5 shrink-0 text-amber-600 dark:text-amber-400" />
+            <span className="truncate">{dailyChallenge.formattedDate} • {dailyChallenge.brainPerk}</span>
+          </div>
+          <div className="flex items-center gap-1 text-[11px] text-amber-700 dark:text-amber-400 font-bold shrink-0 pl-2">
+            <Flame className="w-3 h-3 fill-amber-500 text-amber-500" />
+            <span>Daily</span>
+          </div>
+        </div>
+      )}
+
+      {level && !dailyChallenge && (
         <div
           id="game-level-perk-banner"
           className="mb-1.5 px-3 py-1 rounded-xl bg-blue-50 dark:bg-blue-950/40 border border-blue-200/80 dark:border-blue-900/50 flex items-center justify-between text-xs"

@@ -1,7 +1,7 @@
 import { useEffect } from 'react';
-import { Brain, CheckCircle2, ChevronRight, Coins, Home, MapPin, RotateCcw, Sparkles, Star } from 'lucide-react';
+import { Brain, Calendar, CheckCircle2, ChevronRight, Coins, Flame, Home, MapPin, RotateCcw, Sparkles, Star } from 'lucide-react';
 import confetti from 'canvas-confetti';
-import { Category, GameMode, LevelDef, Theme } from '../types.ts';
+import { Category, DailyChallengeDef, GameMode, LevelDef, Theme } from '../types.ts';
 import { CATEGORIES } from '../data/categories.ts';
 import { playButtonTap, playLevelWin, playVictoryFanfare } from '../utils/audio.ts';
 import { ThemeToggle } from './ThemeToggle.tsx';
@@ -9,6 +9,8 @@ import { ThemeToggle } from './ThemeToggle.tsx';
 interface ResultsScreenProps {
   category?: Category;
   level?: LevelDef;
+  dailyChallenge?: DailyChallengeDef;
+  dailyStreak?: number;
   stars?: number;
   mode: GameMode;
   score: number;
@@ -28,6 +30,8 @@ interface ResultsScreenProps {
 export function ResultsScreen({
   category,
   level,
+  dailyChallenge,
+  dailyStreak,
   stars = 3,
   mode,
   score,
@@ -45,7 +49,7 @@ export function ResultsScreen({
 }: ResultsScreenProps) {
   useEffect(() => {
     // Play victory sound
-    if (level) {
+    if (dailyChallenge || level) {
       playLevelWin();
     } else {
       playVictoryFanfare();
@@ -62,11 +66,16 @@ export function ResultsScreen({
     } catch {
       // safe fallback
     }
-  }, [level]);
+  }, [level, dailyChallenge]);
 
+  const isDaily = Boolean(dailyChallenge);
   const isLevelMode = Boolean(level);
-  const title = level ? `Level ${level.levelNumber} Mastered!` : `${category?.name} Completed`;
-  const emoji = level ? level.emoji : category?.emoji || '🏆';
+  const title = dailyChallenge
+    ? 'Daily Challenge Mastered!'
+    : level
+    ? `Level ${level.levelNumber} Mastered!`
+    : `${category?.name} Completed`;
+  const emoji = dailyChallenge ? dailyChallenge.emoji : level ? level.emoji : category?.emoji || '🏆';
 
   const formatTime = (totalSec: number) => {
     const mins = Math.floor(totalSec / 60);
@@ -104,8 +113,8 @@ export function ResultsScreen({
           </div>
         </div>
 
-        {/* Stars rating banner for Level mode */}
-        {isLevelMode && (
+        {/* Stars rating banner for Level mode or Daily Challenge */}
+        {(isLevelMode || isDaily) && (
           <div className="flex items-center justify-center gap-2 mb-2 animate-in zoom-in-50">
             {[1, 2, 3].map((starNum) => (
               <div
@@ -128,8 +137,18 @@ export function ResultsScreen({
           </div>
         )}
 
-        <span className="text-xs font-bold text-blue-600 dark:text-blue-400 uppercase tracking-widest bg-blue-100 dark:bg-blue-950/80 px-3 py-0.5 rounded-full mb-1">
-          {level ? `${level.tier} Solved` : 'Puzzle Solved!'}
+        <span
+          className={`text-xs font-bold uppercase tracking-widest px-3 py-0.5 rounded-full mb-1 ${
+            isDaily
+              ? 'text-amber-700 dark:text-amber-300 bg-amber-100 dark:bg-amber-950/80'
+              : 'text-blue-600 dark:text-blue-400 bg-blue-100 dark:bg-blue-950/80'
+          }`}
+        >
+          {dailyChallenge
+            ? `${dailyChallenge.formattedDate} • ${dailyChallenge.tier}`
+            : level
+            ? `${level.tier} Solved`
+            : 'Puzzle Solved!'}
         </span>
 
         <h1 className="text-xl sm:text-2xl font-black text-zinc-900 dark:text-slate-100 tracking-tight mb-1 transition-colors">
@@ -137,24 +156,61 @@ export function ResultsScreen({
         </h1>
 
         <p className="text-xs text-zinc-500 dark:text-slate-400 font-medium transition-colors">
-          Solved in {formatTime(timeTakenSeconds)} • {mode === 'classic' ? 'Standard Pace' : 'Speed Mode'}
+          Solved in {formatTime(timeTakenSeconds)} • {isDaily ? `${dailyChallenge.words.length} Words Found` : mode === 'classic' ? 'Standard Pace' : 'Speed Mode'}
         </p>
 
-        {/* Brain Perk Unlocked Banner for Level Mode */}
-        {level && (
+        {/* Daily Streak Highlight Banner */}
+        {isDaily && dailyStreak !== undefined && (
+          <div
+            id="results-daily-streak-banner"
+            className="w-full mt-3 p-3 rounded-2xl bg-linear-to-r from-amber-500/15 via-orange-500/15 to-red-500/15 border border-amber-300 dark:border-amber-700/60 flex items-center justify-between shadow-xs animate-in slide-in-from-bottom-2 duration-300 transition-colors"
+          >
+            <div className="flex items-center gap-2.5">
+              <div className="w-9 h-9 rounded-xl bg-amber-500 text-white flex items-center justify-center shadow-xs">
+                <Flame className="w-5 h-5 fill-white text-white" />
+              </div>
+              <div className="text-left">
+                <div className="text-xs font-black text-amber-950 dark:text-amber-100">
+                  {dailyStreak} Day Streak Achieved!
+                </div>
+                <div className="text-[10px] text-amber-800 dark:text-amber-300 font-medium">
+                  Come back tomorrow for bonus coins!
+                </div>
+              </div>
+            </div>
+            <div className="px-2.5 py-1 rounded-full bg-amber-500 text-white font-mono font-black text-xs shadow-xs">
+              🔥 {dailyStreak}
+            </div>
+          </div>
+        )}
+
+        {/* Brain Perk Unlocked Banner for Level Mode or Daily Challenge */}
+        {(level || dailyChallenge) && (
           <div
             id="results-brain-perk"
-            className="w-full mt-3 p-3 rounded-2xl bg-linear-to-r from-blue-500/10 via-purple-500/10 to-indigo-500/10 border border-blue-200 dark:border-blue-900/60 flex items-center gap-2.5 text-left"
+            className={`w-full mt-3 p-3 rounded-2xl border flex items-center gap-2.5 text-left ${
+              isDaily
+                ? 'bg-linear-to-r from-amber-500/10 via-orange-500/10 to-amber-500/10 border-amber-200 dark:border-amber-900/60'
+                : 'bg-linear-to-r from-blue-500/10 via-purple-500/10 to-indigo-500/10 border-blue-200 dark:border-blue-900/60'
+            }`}
           >
-            <div className="w-8 h-8 rounded-xl bg-blue-600 text-white flex items-center justify-center shrink-0">
-              <Brain className="w-4 h-4" />
+            <div
+              className={`w-8 h-8 rounded-xl text-white flex items-center justify-center shrink-0 ${
+                isDaily ? 'bg-amber-500' : 'bg-blue-600'
+              }`}
+            >
+              {isDaily ? <Calendar className="w-4 h-4" /> : <Brain className="w-4 h-4" />}
             </div>
             <div>
-              <div className="text-[10px] uppercase font-bold text-blue-700 dark:text-blue-300">
-                Cognitive Skill Reinforced
+              <div
+                className={`text-[10px] uppercase font-bold ${
+                  isDaily ? 'text-amber-700 dark:text-amber-300' : 'text-blue-700 dark:text-blue-300'
+                }`}
+              >
+                {isDaily ? 'Daily Brain Perk Activated' : 'Cognitive Skill Reinforced'}
               </div>
               <div className="text-xs font-black text-zinc-800 dark:text-slate-100">
-                {level.brainPerk}
+                {dailyChallenge ? dailyChallenge.brainPerk : level?.brainPerk}
               </div>
             </div>
           </div>
@@ -174,7 +230,11 @@ export function ResultsScreen({
                 Reward Added
               </div>
               <div className="text-[10px] text-amber-800 dark:text-amber-300/80 font-medium">
-                {level ? `Level ${level.levelNumber} bonus` : 'Puzzle completion'}
+                {dailyChallenge
+                  ? `Daily reward + streak bonus`
+                  : level
+                  ? `Level ${level.levelNumber} bonus`
+                  : 'Puzzle completion'}
               </div>
             </div>
           </div>
@@ -191,7 +251,7 @@ export function ResultsScreen({
           <div className="flex items-center justify-between pb-1.5 border-b border-zinc-100 dark:border-slate-800 text-xs">
             <span className="text-zinc-500 dark:text-slate-400 font-semibold">Words Found</span>
             <span className="font-mono font-bold text-zinc-800 dark:text-slate-200">
-              +{((level ? level.words.length : category?.words.length) || 0) * 10} pts
+              +{((dailyChallenge ? dailyChallenge.words.length : level ? level.words.length : category?.words.length) || 0) * 10} pts
             </span>
           </div>
 
@@ -246,7 +306,19 @@ export function ResultsScreen({
 
       {/* Action Buttons */}
       <div id="results-actions" className="w-full flex flex-col gap-2 pt-4 pb-2">
-        {onNextLevel && (
+        {dailyChallenge ? (
+          <button
+            id="results-daily-home-btn"
+            onClick={() => {
+              playButtonTap();
+              onHome();
+            }}
+            className="w-full py-3.5 rounded-2xl bg-amber-500 hover:bg-amber-600 text-white font-black text-sm tracking-wide shadow-md shadow-amber-500/25 transition-all active:scale-[0.98] flex items-center justify-center gap-2"
+          >
+            <Home className="w-4 h-4" />
+            <span>BACK TO HOME</span>
+          </button>
+        ) : onNextLevel ? (
           <button
             id="results-next-level-btn"
             onClick={() => {
@@ -258,10 +330,10 @@ export function ResultsScreen({
             <span>CONTINUE TO NEXT LEVEL</span>
             <ChevronRight className="w-4 h-4" />
           </button>
-        )}
+        ) : null}
 
         <div className="flex gap-2 w-full">
-          {onGoToLevelMap && (
+          {onGoToLevelMap && !dailyChallenge && (
             <button
               id="results-journey-btn"
               onClick={() => {
@@ -287,17 +359,19 @@ export function ResultsScreen({
             <span>Replay</span>
           </button>
 
-          <button
-            id="results-home-btn"
-            onClick={() => {
-              playButtonTap();
-              onHome();
-            }}
-            className="flex-1 py-2.5 rounded-xl bg-zinc-900 dark:bg-slate-800 hover:bg-zinc-800 dark:hover:bg-slate-700 text-white font-bold text-xs transition-all flex items-center justify-center gap-1.5 shadow-xs active:scale-95"
-          >
-            <Home className="w-3.5 h-3.5" />
-            <span>Home</span>
-          </button>
+          {!dailyChallenge && (
+            <button
+              id="results-home-btn"
+              onClick={() => {
+                playButtonTap();
+                onHome();
+              }}
+              className="flex-1 py-2.5 rounded-xl bg-zinc-900 dark:bg-slate-800 hover:bg-zinc-800 dark:hover:bg-slate-700 text-white font-bold text-xs transition-all flex items-center justify-center gap-1.5 shadow-xs active:scale-95"
+            >
+              <Home className="w-3.5 h-3.5" />
+              <span>Home</span>
+            </button>
+          )}
         </div>
       </div>
     </div>

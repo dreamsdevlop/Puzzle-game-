@@ -1,0 +1,66 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 512 512" width="512" height="512">
+  <defs>
+    <linearGradient id="bgGrad" x1="0%" y1="0%" x2="100%" y2="100%">
+      <stop offset="0%" stop-color="#1e3a8a"/>
+      <stop offset="50%" stop-color="#2563eb"/>
+      <stop offset="100%" stop-color="#4f46e5"/>
+    </linearGradient>
+    <linearGradient id="tile1" x1="0%" y1="0%" x2="100%" y2="100%">
+      <stop offset="0%" stop-color="#3b82f6"/>
+      <stop offset="100%" stop-color="#1d4ed8"/>
+    </linearGradient>
+    <linearGradient id="tile2" x1="0%" y1="0%" x2="100%" y2="100%">
+      <stop offset="0%" stop-color="#fbbf24"/>
+      <stop offset="100%" stop-color="#d97706"/>
+    </linearGradient>
+    <linearGradient id="tile3" x1="0%" y1="0%" x2="100%" y2="100%">
+      <stop offset="0%" stop-color="#ec4899"/>
+      <stop offset="100%" stop-color="#be185d"/>
+    </linearGradient>
+    <linearGradient id="tile4" x1="0%" y1="0%" x2="100%" y2="100%">
+      <stop offset="0%" stop-color="#10b981"/>
+      <stop offset="100%" stop-color="#047857"/>
+    </linearGradient>
+    <filter id="shadow" x="-10%" y="-10%" width="125%" height="125%">
+      <feDropShadow dx="0" dy="8" stdDeviation="12" flood-color="#000000" flood-opacity="0.35"/>
+    </filter>
+  </defs>
+
+  <!-- Background rounded squircle -->
+  <rect width="512" height="512" rx="112" fill="url(#bgGrad)"/>
+
+  <!-- Subtle grid pattern overlay -->
+  <circle cx="256" cy="256" r="220" fill="none" stroke="#ffffff" stroke-opacity="0.08" stroke-width="2"/>
+  <circle cx="256" cy="256" r="150" fill="none" stroke="#ffffff" stroke-opacity="0.06" stroke-width="2"/>
+
+  <!-- 2x2 Letter Tiles Block -->
+  <g transform="translate(106, 106)" filter="url(#shadow)">
+    <!-- Tile 1: W -->
+    <rect x="0" y="0" width="140" height="140" rx="28" fill="url(#tile1)" stroke="#ffffff" stroke-opacity="0.25" stroke-width="3"/>
+    <text x="70" y="98" font-family="-apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif" font-weight="900" font-size="82" fill="#ffffff" text-anchor="middle">W</text>
+
+    <!-- Tile 2: O -->
+    <rect x="160" y="0" width="140" height="140" rx="28" fill="url(#tile2)" stroke="#ffffff" stroke-opacity="0.25" stroke-width="3"/>
+    <text x="230" y="98" font-family="-apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif" font-weight="900" font-size="82" fill="#1c1917" text-anchor="middle">O</text>
+
+    <!-- Tile 3: R -->
+    <rect x="0" y="160" width="140" height="140" rx="28" fill="url(#tile3)" stroke="#ffffff" stroke-opacity="0.25" stroke-width="3"/>
+    <text x="70" y="258" font-family="-apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif" font-weight="900" font-size="82" fill="#ffffff" text-anchor="middle">R</text>
+
+    <!-- Tile 4: D -->
+    <rect x="160" y="160" width="140" height="140" rx="28" fill="url(#tile4)" stroke="#ffffff" stroke-opacity="0.25" stroke-width="3"/>
+    <text x="230" y="258" font-family="-apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif" font-weight="900" font-size="82" fill="#ffffff" text-anchor="middle">D</text>
+  </g>
+
+  <!-- Word Search Selection Beam -->
+  <line x1="120" y1="246" x2="392" y2="246" stroke="#f59e0b" stroke-width="12" stroke-linecap="round" opacity="0.85" filter="url(#shadow)"/>
+
+  <!-- Star / Sparkle top-right -->
+  <g transform="translate(380, 70)">
+    <path d="M 24 0 L 30 18 L 48 24 L 30 30 L 24 48 L 18 30 L 0 24 L 18 18 Z" fill="#fbbf24" stroke="#ffffff" stroke-width="2"/>
+  </g>
+  <!-- Mini sparkle bottom-left -->
+  <g transform="translate(68, 390)">
+    <path d="M 16 0 L 20 12 L 32 16 L 20 20 L 16 32 L 12 20 L 0 16 L 12 12 Z" fill="#60a5fa" stroke="#ffffff" stroke-width="1.5"/>
+  </g>
+</svg>

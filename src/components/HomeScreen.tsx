@@ -1,5 +1,6 @@
-import { Brain, Coins, Compass, Grid, Music, Play, Settings, Sparkles, Star, Volume2, VolumeX } from 'lucide-react';
-import { Theme } from '../types.ts';
+import { Brain, Calendar, Check, Coins, Compass, Download, Flame, Grid, Music, Play, Settings, Sparkles, Star, Volume2, VolumeX } from 'lucide-react';
+import { usePWA } from '../hooks/usePWA.ts';
+import { DailyChallengeDef, DailyStreakInfo, Theme } from '../types.ts';
 import { playButtonTap, playSatisfyingClick } from '../utils/audio.ts';
 import { MUSIC_TRACKS } from '../utils/musicEngine.ts';
 import { Storage } from '../utils/storage.ts';
@@ -12,6 +13,8 @@ interface HomeScreenProps {
   brainRankTitle: string;
   completedCategoriesCount: number;
   totalCategories: number;
+  dailyStreak: DailyStreakInfo;
+  todayChallenge: DailyChallengeDef;
   soundEnabled: boolean;
   theme: Theme;
   onToggleSound: () => void;
@@ -19,6 +22,7 @@ interface HomeScreenProps {
   onOpenSettings: () => void;
   onPlayLevelJourney: () => void;
   onPlayCategories: () => void;
+  onPlayDailyChallenge: () => void;
 }
 
 export function HomeScreen({
@@ -28,6 +32,8 @@ export function HomeScreen({
   brainRankTitle,
   completedCategoriesCount,
   totalCategories,
+  dailyStreak,
+  todayChallenge,
   soundEnabled,
   theme,
   onToggleSound,
@@ -35,7 +41,9 @@ export function HomeScreen({
   onOpenSettings,
   onPlayLevelJourney,
   onPlayCategories,
+  onPlayDailyChallenge,
 }: HomeScreenProps) {
+  const { canInstall, installApp } = usePWA();
   const currentTrackId = Storage.getMusicTrack();
   const currentTrack = MUSIC_TRACKS.find((t) => t.id === currentTrackId) || MUSIC_TRACKS[0];
   const isMusicOn = Storage.getMusicEnabled();
@@ -64,6 +72,21 @@ export function HomeScreen({
             <span className="font-mono">{totalStars}</span>
           </div>
 
+          {canInstall && (
+            <button
+              id="home-install-pwa-btn"
+              onClick={async () => {
+                playSatisfyingClick();
+                await installApp();
+              }}
+              className="flex items-center gap-1 px-2.5 py-1 rounded-full bg-blue-50 dark:bg-blue-950/60 border border-blue-200 dark:border-blue-800 text-blue-700 dark:text-blue-300 text-xs font-bold transition-all active:scale-95 shadow-xs"
+              title="Install App to Home Screen"
+            >
+              <Download className="w-3.5 h-3.5 text-blue-600 dark:text-blue-400" />
+              <span>Install</span>
+            </button>
+          )}
+
           <ThemeToggle
             theme={theme}
             onToggle={onToggleTheme}
@@ -77,7 +100,7 @@ export function HomeScreen({
               onOpenSettings();
             }}
             className="p-2 rounded-full bg-white dark:bg-slate-900 shadow-xs border border-zinc-200/80 dark:border-slate-800 text-zinc-600 dark:text-slate-300 hover:text-zinc-900 dark:hover:text-white transition-all active:scale-95 flex items-center justify-center"
-            title="Audio & Music Settings"
+            title="Audio, AdMob & App Settings"
           >
             <Settings className="w-4 h-4" />
           </button>
@@ -158,8 +181,104 @@ export function HomeScreen({
         </div>
       </div>
 
-      {/* Bottom Actions: Play Level Journey + Categories Mode */}
+      {/* Bottom Actions: Daily Challenge + Level Journey + Categories Mode */}
       <div id="home-actions" className="w-full flex flex-col items-center gap-2.5 pb-2">
+        {/* Daily Challenge Action Card */}
+        <button
+          id="home-daily-challenge-btn"
+          onClick={() => {
+            playButtonTap();
+            onPlayDailyChallenge();
+          }}
+          className={`relative group w-full py-3.5 px-4 rounded-2xl border transition-all duration-200 transform active:scale-[0.98] flex items-center justify-between text-left overflow-hidden ${
+            dailyStreak.isCompletedToday
+              ? 'bg-amber-500/10 dark:bg-amber-950/30 border-amber-300/80 dark:border-amber-700/60 shadow-xs'
+              : 'bg-linear-to-r from-amber-500 via-amber-600 to-orange-500 text-white border-amber-400/80 shadow-md shadow-amber-500/25 hover:brightness-105'
+          }`}
+        >
+          <div className="flex items-center gap-3">
+            <div
+              className={`w-10 h-10 rounded-xl flex items-center justify-center text-xl relative shrink-0 shadow-xs ${
+                dailyStreak.isCompletedToday
+                  ? 'bg-white dark:bg-slate-800 border border-amber-200 dark:border-amber-800'
+                  : 'bg-white/20'
+              }`}
+            >
+              <span>{todayChallenge.emoji}</span>
+              {dailyStreak.isCompletedToday && (
+                <div className="absolute -bottom-1 -right-1 w-4 h-4 rounded-full bg-emerald-500 text-white flex items-center justify-center shadow-xs">
+                  <Check className="w-2.5 h-2.5 stroke-[3]" />
+                </div>
+              )}
+            </div>
+
+            <div className="text-left">
+              <div
+                className={`text-[10px] uppercase font-bold tracking-wider flex items-center gap-1.5 ${
+                  dailyStreak.isCompletedToday
+                    ? 'text-amber-700 dark:text-amber-400'
+                    : 'text-amber-100'
+                }`}
+              >
+                <Calendar className="w-3 h-3" />
+                <span>Daily Challenge • {todayChallenge.formattedDate}</span>
+              </div>
+              <div
+                className={`text-sm font-black leading-tight ${
+                  dailyStreak.isCompletedToday
+                    ? 'text-zinc-900 dark:text-slate-100'
+                    : 'text-white'
+                }`}
+              >
+                {todayChallenge.theme}
+              </div>
+              <div
+                className={`text-[11px] font-medium ${
+                  dailyStreak.isCompletedToday
+                    ? 'text-emerald-600 dark:text-emerald-400 font-semibold'
+                    : 'text-amber-100/90'
+                }`}
+              >
+                {dailyStreak.isCompletedToday
+                  ? 'Completed today • Tap to replay'
+                  : 'Fresh puzzle • Win +120 coins'}
+              </div>
+            </div>
+          </div>
+
+          <div className="flex items-center gap-2 shrink-0">
+            {/* Streak Badge */}
+            <div
+              className={`flex items-center gap-1 px-2.5 py-1 rounded-full text-xs font-black shadow-xs ${
+                dailyStreak.isCompletedToday
+                  ? 'bg-amber-100 dark:bg-amber-900/60 text-amber-800 dark:text-amber-200 border border-amber-300 dark:border-amber-700'
+                  : 'bg-white/25 text-white border border-white/30'
+              }`}
+            >
+              <Flame
+                className={`w-3.5 h-3.5 ${
+                  dailyStreak.currentStreak > 0
+                    ? 'fill-amber-400 text-amber-400'
+                    : 'text-amber-200'
+                }`}
+              />
+              <span className="font-mono">
+                {dailyStreak.currentStreak > 0 ? `${dailyStreak.currentStreak}d` : 'New'}
+              </span>
+            </div>
+
+            <div
+              className={`w-7 h-7 rounded-full flex items-center justify-center ${
+                dailyStreak.isCompletedToday
+                  ? 'bg-amber-100 dark:bg-slate-800 text-amber-800 dark:text-amber-200'
+                  : 'bg-white/20 text-white'
+              }`}
+            >
+              <Play className="w-3.5 h-3.5 fill-current ml-0.5" />
+            </div>
+          </div>
+        </button>
+
         {/* Primary Action: Level Journey */}
         <button
           id="home-level-journey-btn"

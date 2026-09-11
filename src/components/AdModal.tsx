@@ -1,5 +1,6 @@
 import { useEffect, useState } from 'react';
 import { Play, Sparkles, X } from 'lucide-react';
+import { AdMobManager, ADMOB_PRODUCTION_CONFIG } from '../utils/admob.ts';
 
 interface AdModalProps {
   type: 'interstitial' | 'rewarded';
@@ -8,16 +9,7 @@ interface AdModalProps {
   onRewardEarned?: () => void;
 }
 
-export const ADMOB_CONFIG = {
-  appName: 'Game puzzle',
-  publisherId: 'pub-8857493053340063',
-  appId: 'ca-app-pub-8857493053340063~9438377409',
-  rewardedId: 'ca-app-pub-8857493053340063/3042053114',
-  rewardedName: 'King reward ads',
-  bannerId: 'ca-app-pub-8857493053340063/5307560708',
-  bannerName: 'Banner add',
-  interstitialId: 'ca-app-pub-8857493053340063/3042053114',
-};
+export const ADMOB_CONFIG = ADMOB_PRODUCTION_CONFIG;
 
 export function AdModal({
   type,
@@ -28,6 +20,8 @@ export function AdModal({
   const [secondsLeft, setSecondsLeft] = useState(type === 'rewarded' ? 5 : 3);
   const [canClose, setCanClose] = useState(false);
   const [rewardGranted, setRewardGranted] = useState(false);
+  const activeConfig = AdMobManager.getActiveConfig();
+  const isTest = AdMobManager.isTestMode();
 
   useEffect(() => {
     if (!isOpen) {
@@ -168,22 +162,23 @@ export function AdModal({
           <div className="flex justify-between">
             <span>Ad Unit Name:</span>
             <span className="font-semibold text-zinc-300">
-              {type === 'rewarded' ? ADMOB_CONFIG.rewardedName : 'Interstitial'}
+              {type === 'rewarded' ? activeConfig.rewardedName : 'Interstitial'}
+              {isTest && <span className="text-amber-400 font-normal ml-1">(Test)</span>}
             </span>
           </div>
           <div className="flex justify-between">
             <span>AdMob Unit ID:</span>
             <span className="font-mono text-zinc-400">
-              {type === 'rewarded' ? ADMOB_CONFIG.rewardedId : ADMOB_CONFIG.interstitialId}
+              {type === 'rewarded' ? activeConfig.rewardedId : activeConfig.interstitialId}
             </span>
           </div>
           <div className="flex justify-between">
             <span>Publisher ID:</span>
-            <span className="font-mono text-zinc-400">{ADMOB_CONFIG.publisherId}</span>
+            <span className="font-mono text-zinc-400">{activeConfig.publisherId}</span>
           </div>
           <div className="flex justify-between">
             <span>App Name / ID:</span>
-            <span className="font-mono text-zinc-400">{ADMOB_CONFIG.appName} ({ADMOB_CONFIG.appId})</span>
+            <span className="font-mono text-zinc-400">{activeConfig.appName} ({activeConfig.appId})</span>
           </div>
         </div>
       </div>

@@ -1,17 +1,24 @@
-import { useState } from 'react';
+import { useEffect, useState } from 'react';
 import {
   Check,
   Disc3,
+  Download,
+  FileCode2,
+  FileText,
+  Layers,
   Moon,
   Music,
   RotateCcw,
+  ShieldCheck,
   Smartphone,
+  Sparkles,
   Sun,
+  Tv,
   Volume2,
   VolumeX,
   X,
-  Sparkles,
 } from 'lucide-react';
+import { usePWA } from '../hooks/usePWA.ts';
 import { MusicTrackId, Theme } from '../types.ts';
 import {
   getSfxVolume,
@@ -22,6 +29,7 @@ import {
   setAudioEnabled,
   setSfxVolume,
 } from '../utils/audio.ts';
+import { AdMobManager, AdMobUnitConfig } from '../utils/admob.ts';
 import { MusicEngine, MUSIC_TRACKS } from '../utils/musicEngine.ts';
 import { Storage } from '../utils/storage.ts';
 
@@ -30,6 +38,7 @@ interface SettingsModalProps {
   theme: Theme;
   onToggleTheme: () => void;
   onClose: () => void;
+  onTestAd?: () => void;
 }
 
 export function SettingsModal({
@@ -37,6 +46,7 @@ export function SettingsModal({
   theme,
   onToggleTheme,
   onClose,
+  onTestAd,
 }: SettingsModalProps) {
   // Audio & Music local states for smooth immediate UI response
   const [sfxEnabled, setSfxEnabledState] = useState(() => Storage.getSoundEnabled());
@@ -46,6 +56,28 @@ export function SettingsModal({
   const [activeTrack, setActiveTrack] = useState<MusicTrackId>(() => Storage.getMusicTrack());
   const [hapticsEnabled, setHapticsState] = useState(() => Storage.getHapticsEnabled());
   const [activeTestSound, setActiveTestSound] = useState<'click' | 'success' | null>(null);
+
+  // AdMob & PWA States
+  const { canInstall, isInstalled, isStandalone, installApp } = usePWA();
+  const [isTestAdMode, setIsTestAdMode] = useState(() => AdMobManager.isTestMode());
+  const [appAdsTxtStatus, setAppAdsTxtStatus] = useState<boolean | null>(null);
+  const [adConfig, setAdConfig] = useState<AdMobUnitConfig>(() => AdMobManager.getActiveConfig());
+
+  useEffect(() => {
+    if (isOpen) {
+      AdMobManager.checkAppAdsTxt().then((res) => {
+        setAppAdsTxtStatus(res.exists);
+      });
+    }
+  }, [isOpen]);
+
+  const handleToggleTestMode = () => {
+    const next = !isTestAdMode;
+    setIsTestAdMode(next);
+    AdMobManager.setTestMode(next);
+    setAdConfig(AdMobManager.getActiveConfig());
+    playSatisfyingClick();
+  };
 
   if (!isOpen) return null;
 
@@ -406,6 +438,158 @@ export function SettingsModal({
                   </>
                 )}
               </button>
+            </div>
+          </div>
+
+          <hr className="border-zinc-100 dark:border-slate-800" />
+
+          {/* SECTION 4: WEB APP MANIFEST & PWA INSTALL */}
+          <div className="space-y-3">
+            <div className="flex items-center justify-between">
+              <div className="flex items-center gap-2">
+                <Layers className="w-4 h-4 text-blue-600 dark:text-blue-400" />
+                <div>
+                  <span className="font-bold text-zinc-900 dark:text-slate-100 block text-xs">
+                    Web App Manifest & PWA
+                  </span>
+                  <span className="text-[10px] text-zinc-500 dark:text-slate-400">
+                    manifest.json & standalone installability
+                  </span>
+                </div>
+              </div>
+
+              {canInstall && (
+                <button
+                  id="pwa-install-button"
+                  onClick={async () => {
+                    playSatisfyingClick();
+                    await installApp();
+                  }}
+                  className="flex items-center gap-1.5 px-3 py-1.5 rounded-full bg-blue-600 hover:bg-blue-500 text-white text-xs font-bold transition-all shadow-xs active:scale-95"
+                >
+                  <Download className="w-3.5 h-3.5" />
+                  <span>Install App</span>
+                </button>
+              )}
+            </div>
+
+            {/* Manifest Details Card */}
+            <div className="p-3 rounded-xl bg-zinc-50 dark:bg-slate-800/60 border border-zinc-200 dark:border-slate-700/80 text-[11px] space-y-2">
+              <div className="flex items-center justify-between">
+                <span className="font-semibold text-zinc-700 dark:text-slate-200 flex items-center gap-1.5">
+                  <FileCode2 className="w-3.5 h-3.5 text-blue-500" />
+                  <span>Manifest Status:</span>
+                </span>
+                <span className="px-2 py-0.5 rounded-full bg-emerald-100 dark:bg-emerald-950/60 text-emerald-700 dark:text-emerald-300 font-mono text-[10px] font-bold border border-emerald-300 dark:border-emerald-800">
+                  manifest.json active
+                </span>
+              </div>
+
+              <div className="grid grid-cols-2 gap-2 pt-1 font-mono text-[10px] text-zinc-600 dark:text-slate-300">
+                <div>
+                  <span className="text-zinc-400 dark:text-slate-500 block">Short Name:</span>
+                  <span className="font-semibold text-zinc-800 dark:text-slate-200">WordSearch</span>
+                </div>
+                <div>
+                  <span className="text-zinc-400 dark:text-slate-500 block">Display Mode:</span>
+                  <span className="font-semibold text-zinc-800 dark:text-slate-200">standalone</span>
+                </div>
+                <div>
+                  <span className="text-zinc-400 dark:text-slate-500 block">Icons Included:</span>
+                  <span className="font-semibold text-zinc-800 dark:text-slate-200">192, 512, Maskable</span>
+                </div>
+                <div>
+                  <span className="text-zinc-400 dark:text-slate-500 block">Install State:</span>
+                  <span className="font-semibold text-zinc-800 dark:text-slate-200">
+                    {isStandalone ? 'Standalone App' : isInstalled ? 'Installed' : 'Ready to Install'}
+                  </span>
+                </div>
+              </div>
+            </div>
+          </div>
+
+          <hr className="border-zinc-100 dark:border-slate-800" />
+
+          {/* SECTION 5: GOOGLE ADMOB SETUP & VERIFICATION */}
+          <div className="space-y-3">
+            <div className="flex items-center justify-between">
+              <div className="flex items-center gap-2">
+                <Tv className="w-4 h-4 text-amber-500" />
+                <div>
+                  <span className="font-bold text-zinc-900 dark:text-slate-100 block text-xs">
+                    Google AdMob Setup
+                  </span>
+                  <span className="text-[10px] text-zinc-500 dark:text-slate-400">
+                    Publisher ID, Ad Units & app-ads.txt
+                  </span>
+                </div>
+              </div>
+
+              {/* Mode Toggle Switch */}
+              <div className="flex items-center gap-2">
+                <span className="text-[10px] font-bold text-zinc-500 dark:text-slate-400">
+                  {isTestAdMode ? 'Test Mode' : 'Live Mode'}
+                </span>
+                <button
+                  id="toggle-admob-test-mode"
+                  onClick={handleToggleTestMode}
+                  title="Toggle Test Ad Units vs Live Ad Units"
+                  className={`relative inline-flex h-5 w-9 items-center rounded-full transition-colors focus:outline-hidden ${
+                    isTestAdMode ? 'bg-amber-500' : 'bg-emerald-600'
+                  }`}
+                >
+                  <span
+                    className={`inline-block h-3.5 w-3.5 transform rounded-full bg-white transition-transform ${
+                      isTestAdMode ? 'translate-x-4' : 'translate-x-1'
+                    }`}
+                  />
+                </button>
+              </div>
+            </div>
+
+            {/* AdMob Configuration Details Card */}
+            <div className="p-3 rounded-xl bg-zinc-50 dark:bg-slate-800/60 border border-zinc-200 dark:border-slate-700/80 text-[11px] space-y-2">
+              <div className="flex items-center justify-between">
+                <span className="text-zinc-600 dark:text-slate-300 font-medium">app-ads.txt Status:</span>
+                <span className="px-2 py-0.5 rounded-full bg-emerald-100 dark:bg-emerald-950/60 text-emerald-700 dark:text-emerald-300 font-mono text-[10px] font-bold border border-emerald-300 dark:border-emerald-800 flex items-center gap-1">
+                  <ShieldCheck className="w-3 h-3" />
+                  <span>{appAdsTxtStatus ? 'Verified (Direct)' : 'Available at /app-ads.txt'}</span>
+                </span>
+              </div>
+
+              <div className="space-y-1.5 font-mono text-[10px] pt-1">
+                <div className="flex justify-between">
+                  <span className="text-zinc-400 dark:text-slate-500">Publisher ID:</span>
+                  <span className="text-zinc-800 dark:text-slate-200 font-bold">{adConfig.publisherId}</span>
+                </div>
+                <div className="flex justify-between">
+                  <span className="text-zinc-400 dark:text-slate-500">App ID:</span>
+                  <span className="text-zinc-700 dark:text-slate-300 truncate max-w-[200px]">{adConfig.appId}</span>
+                </div>
+                <div className="flex justify-between">
+                  <span className="text-zinc-400 dark:text-slate-500">Banner Unit:</span>
+                  <span className="text-emerald-600 dark:text-emerald-400 truncate max-w-[200px]">{adConfig.bannerId}</span>
+                </div>
+                <div className="flex justify-between">
+                  <span className="text-zinc-400 dark:text-slate-500">Rewarded Unit:</span>
+                  <span className="text-purple-600 dark:text-purple-400 truncate max-w-[200px]">{adConfig.rewardedId}</span>
+                </div>
+              </div>
+
+              {/* Ad Demo Trigger */}
+              {onTestAd && (
+                <button
+                  id="test-admob-demo-btn"
+                  onClick={() => {
+                    playSatisfyingClick();
+                    onTestAd();
+                  }}
+                  className="w-full mt-2 py-2 px-3 rounded-lg bg-zinc-200 dark:bg-slate-700 hover:bg-zinc-300 dark:hover:bg-slate-600 text-zinc-800 dark:text-slate-100 font-bold text-xs transition-colors flex items-center justify-center gap-1.5"
+                >
+                  <Sparkles className="w-3.5 h-3.5 text-amber-500" />
+                  <span>Preview AdMob Unit Dialog</span>
+                </button>
+              )}
             </div>
           </div>
         </div>
