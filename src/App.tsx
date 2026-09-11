@@ -18,6 +18,7 @@ import { GameScreen } from './components/GameScreen.tsx';
 import { ResultsScreen } from './components/ResultsScreen.tsx';
 import { SettingsModal } from './components/SettingsModal.tsx';
 import { ThemeShopModal } from './components/ThemeShopModal.tsx';
+import { WebAdFooter, WebAdRail, WebAdSafeStyles, WebAdSlots } from './components/WebAdSlots.tsx';
 
 export default function App() {
   // Navigation & Screen state
@@ -451,6 +452,11 @@ export default function App() {
           }}
         />
       )}
+
+      <WebAdSafeStyles />
+      <WebAdSlots screen={screen} />
+      <WebAdFooter />
+      <WebAdRail />
 
       {/* Native AdMob banner stays visible, with a reserved strip below every screen. */}
       <BannerAd visible />
