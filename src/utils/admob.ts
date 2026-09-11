@@ -43,6 +43,13 @@ async function ensureReady(): Promise<boolean> {
   if (initialized && consentReady) return true;
 
   try {
+    if (!initialized) {
+      await AdMob.initialize({
+        initializeForTesting: false,
+      });
+      initialized = true;
+    }
+
     const consentInfo = await AdMob.requestConsentInfo();
     let currentConsent = consentInfo;
     if (
@@ -54,10 +61,6 @@ async function ensureReady(): Promise<boolean> {
 
     if (!currentConsent.canRequestAds) return false;
 
-    await AdMob.initialize({
-      initializeForTesting: false,
-    });
-    initialized = true;
     consentReady = true;
     return true;
   } catch (error) {
@@ -99,6 +102,7 @@ export const AdMobManager = {
       }
     }
 
+    console.warn('[AdMob] No banner unit returned an ad. Check app readiness, account status, consent, and ad-unit activation in AdMob.');
     return false;
   },
 
@@ -141,7 +145,7 @@ export const AdMobManager = {
       await AdMob.showRewardVideoAd({ adId: ADMOB_PRODUCTION_CONFIG.rewardedId });
       return true;
     } catch (error) {
-      console.warn('[AdMob] Rewarded ad unavailable:', error);
+      console.warn('[AdMob] Rewarded ad unavailable. Check app readiness, consent, and rewarded-unit activation:', error);
       return false;
     }
   },
