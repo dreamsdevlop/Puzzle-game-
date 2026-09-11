@@ -2,7 +2,7 @@ import { useState, MouseEvent } from 'react';
 import { ArrowLeft, Brain, CheckCircle2, ChevronRight, Coins, Gift, Lock, Sparkles, Star } from 'lucide-react';
 import { LevelDef, LevelStarRecord, Theme } from '../types.ts';
 import { calculateBrainRank, CURATED_LEVELS, getLevelDef, STAGES_CONFIG } from '../data/levels.ts';
-import { playButtonTap, playLevelWin, playWrongSelection } from '../utils/audio.ts';
+import { playButtonTap, playLevelWin, playSatisfyingClick, playWrongSelection } from '../utils/audio.ts';
 import { ThemeToggle } from './ThemeToggle.tsx';
 import { Storage } from '../utils/storage.ts';
 
@@ -17,6 +17,7 @@ interface LevelJourneyScreenProps {
   onClaimMilestone: (levelNumber: number, rewardCoins: number) => void;
   onBack: () => void;
   onSwitchToCategories?: () => void;
+  onOpenShop?: () => void;
 }
 
 export function LevelJourneyScreen({
@@ -30,6 +31,7 @@ export function LevelJourneyScreen({
   onClaimMilestone,
   onBack,
   onSwitchToCategories,
+  onOpenShop,
 }: LevelJourneyScreenProps) {
   const [selectedStageFilter, setSelectedStageFilter] = useState<number | 'all'>('all');
   const [celebrationChest, setCelebrationChest] = useState<{
@@ -109,15 +111,22 @@ export function LevelJourneyScreen({
             <span className="font-mono">{totalStars}</span>
           </div>
 
-          <div
+          <button
             id="journey-coins-pill"
-            className="flex items-center gap-1.5 px-2.5 py-1 rounded-full bg-white dark:bg-slate-900 shadow-xs border border-zinc-200 dark:border-slate-800 text-zinc-900 dark:text-slate-100 font-bold text-xs transition-colors"
+            onClick={() => {
+              if (onOpenShop) {
+                playSatisfyingClick();
+                onOpenShop();
+              }
+            }}
+            className="flex items-center gap-1.5 px-2.5 py-1 rounded-full bg-white dark:bg-slate-900 shadow-xs border border-zinc-200 dark:border-slate-800 text-zinc-900 dark:text-slate-100 font-bold text-xs transition-all active:scale-95 hover:border-amber-400 dark:hover:border-amber-600"
+            title="Open Theme & Wallpaper Shop"
           >
             <div className="w-3.5 h-3.5 rounded-full bg-amber-400 flex items-center justify-center text-amber-950">
               <Coins className="w-2.5 h-2.5" />
             </div>
             <span className="font-mono">{coins}</span>
-          </div>
+          </button>
 
           <ThemeToggle
             theme={theme}

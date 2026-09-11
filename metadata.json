@@ -1,6 +1,6 @@
 {
   "name": "Word Search",
-  "description": "A brain-sharpening level-based word search puzzle game with progressive cognitive tiers, deterministic Daily Challenges, tactile magnetic sliding, dark & light themes, and hints.",
+  "description": "A brain-sharpening level-based word search puzzle game with progressive cognitive tiers, deterministic Daily Challenges, cosmetic Theme & Wallpaper Store for earned coins, tactile magnetic sliding, and dark & light themes.",
   "requestFramePermissions": [],
   "majorCapabilities": ["MAJOR_CAPABILITY_SERVER_SIDE_GEMINI_API"]
 }

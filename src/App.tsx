@@ -1,7 +1,8 @@
 import { useEffect, useMemo, useState } from 'react';
-import { Category, DailyChallengeDef, DailyStreakInfo, GameMode, LevelDef, LevelStarRecord, Screen, Theme } from './types.ts';
+import { Category, CustomizationState, DailyChallengeDef, DailyStreakInfo, GameMode, LevelDef, LevelStarRecord, Screen, Theme } from './types.ts';
 import { CATEGORIES } from './data/categories.ts';
 import { calculateBrainRank, getLevelDef } from './data/levels.ts';
+import { getTileThemeById, getWallpaperById } from './data/shopThemes.ts';
 import { initAudioSettings, setAudioEnabled } from './utils/audio.ts';
 import { getDailyChallengeForDate, getTodayDateKey } from './utils/dailyChallenge.ts';
 import { MusicEngine } from './utils/musicEngine.ts';
@@ -15,11 +16,18 @@ import { ModeSelectScreen } from './components/ModeSelectScreen.tsx';
 import { GameScreen } from './components/GameScreen.tsx';
 import { ResultsScreen } from './components/ResultsScreen.tsx';
 import { SettingsModal } from './components/SettingsModal.tsx';
+import { ThemeShopModal } from './components/ThemeShopModal.tsx';
 
 export default function App() {
   // Navigation & Screen state
   const [screen, setScreen] = useState<Screen>('home');
   const [isSettingsOpen, setIsSettingsOpen] = useState(false);
+  const [isShopOpen, setIsShopOpen] = useState(false);
+
+  // Customization & Shop state
+  const [customization, setCustomization] = useState<CustomizationState>(() =>
+    Storage.getCustomizationState(),
+  );
 
   // Today's Daily Challenge Definition & Streak State
   const todayKey = useMemo(() => getTodayDateKey(), []);
@@ -83,6 +91,16 @@ export default function App() {
     0,
   );
   const brainRank = calculateBrainRank(completedLevelCount, totalStars);
+
+  // Active Wallpaper & Tile Theme definitions based on equipped shop items
+  const activeWallpaper = useMemo(
+    () => getWallpaperById(customization.equippedWallpaperId),
+    [customization.equippedWallpaperId],
+  );
+  const activeTileTheme = useMemo(
+    () => getTileThemeById(customization.equippedTileThemeId),
+    [customization.equippedTileThemeId],
+  );
 
   // Initialize audio settings & handle music autoplay unlocking on first user gesture
   useEffect(() => {
@@ -287,7 +305,10 @@ export default function App() {
   return (
     <main
       id="app-root"
-      className="min-h-screen bg-[#f0f0f3] dark:bg-slate-950 text-[#1a1a1a] dark:text-slate-100 flex flex-col font-sans transition-colors"
+      style={{
+        background: theme === 'dark' ? activeWallpaper.backgroundCssDark : activeWallpaper.backgroundCssLight,
+      }}
+      className="min-h-screen text-[#1a1a1a] dark:text-slate-100 flex flex-col font-sans transition-colors relative"
     >
       {/* Active Screen Component */}
       {screen === 'home' && (
@@ -305,6 +326,7 @@ export default function App() {
           onToggleSound={handleToggleSound}
           onToggleTheme={handleToggleTheme}
           onOpenSettings={() => setIsSettingsOpen(true)}
+          onOpenShop={() => setIsShopOpen(true)}
           onPlayLevelJourney={handleGoToLevelJourney}
           onPlayCategories={handleGoToCategorySelect}
           onPlayDailyChallenge={handlePlayDailyChallenge}
@@ -323,6 +345,7 @@ export default function App() {
           onClaimMilestone={handleClaimMilestone}
           onBack={handleGoHome}
           onSwitchToCategories={handleGoToCategorySelect}
+          onOpenShop={() => setIsShopOpen(true)}
         />
       )}
 
@@ -356,6 +379,8 @@ export default function App() {
           coins={coins}
           soundEnabled={soundEnabled}
           theme={theme}
+          tileTheme={activeTileTheme}
+          onOpenShop={() => setIsShopOpen(true)}
           onToggleSound={handleToggleSound}
           onToggleTheme={handleToggleTheme}
           onOpenSettings={() => setIsSettingsOpen(true)}
@@ -393,6 +418,7 @@ export default function App() {
           onNextLevel={activeDailyChallenge ? undefined : handleNextLevel}
           onGoToLevelMap={activeDailyChallenge ? undefined : () => setScreen('level_map')}
           onHome={handleGoHome}
+          onOpenShop={() => setIsShopOpen(true)}
         />
       )}
 
@@ -418,6 +444,10 @@ export default function App() {
         theme={theme}
         onToggleTheme={handleToggleTheme}
         onClose={() => setIsSettingsOpen(false)}
+        onOpenShop={() => {
+          setIsSettingsOpen(false);
+          setIsShopOpen(true);
+        }}
         onTestAd={() => {
           setAdModal({
             isOpen: true,
@@ -426,6 +456,23 @@ export default function App() {
               const newCoins = Storage.addCoins(25);
               setCoins(newCoins);
             },
+          });
+        }}
+      />
+
+      {/* Theme & Wallpaper Customization Store Modal */}
+      <ThemeShopModal
+        isOpen={isShopOpen}
+        theme={theme}
+        coins={coins}
+        onCoinsChange={(newCoins) => setCoins(newCoins)}
+        onClose={() => setIsShopOpen(false)}
+        customization={customization}
+        onCustomizationChange={(updated) => setCustomization(updated)}
+        onRequestRewardedAd={() => {
+          handleRequestRewardedAd(() => {
+            const newCoins = Storage.addCoins(25);
+            setCoins(newCoins);
           });
         }}
       />

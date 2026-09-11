@@ -6,6 +6,7 @@ import {
   Coins,
   Flame,
   Lightbulb,
+  Palette,
   Pause,
   RotateCcw,
   Settings,
@@ -13,9 +14,10 @@ import {
   Volume2,
   VolumeX,
 } from 'lucide-react';
-import { Category, DailyChallengeDef, FoundWord, GameMode, GridCoord, LevelDef, PlacedWord, Theme } from '../types.ts';
+import { Category, DailyChallengeDef, FoundWord, GameMode, GridCoord, LevelDef, PlacedWord, Theme, TileTheme } from '../types.ts';
 import { HIGHLIGHT_COLORS } from '../data/colors.ts';
 import { BONUS_WORDS_SET } from '../data/bonusDictionary.ts';
+import { getTileThemeById } from '../data/shopThemes.ts';
 import {
   calculateMagneticLine,
   coordsToWord,
@@ -44,6 +46,8 @@ interface GameScreenProps {
   coins: number;
   soundEnabled: boolean;
   theme: Theme;
+  tileTheme?: TileTheme;
+  onOpenShop?: () => void;
   onToggleSound: () => void;
   onToggleTheme: () => void;
   onOpenSettings?: () => void;
@@ -66,6 +70,8 @@ export function GameScreen({
   coins,
   soundEnabled,
   theme,
+  tileTheme,
+  onOpenShop,
   onToggleSound,
   onToggleTheme,
   onOpenSettings,
@@ -77,6 +83,7 @@ export function GameScreen({
   const targetWords = activeTarget.words;
   const isLevelMode = Boolean(level);
   const isDaily = Boolean(dailyChallenge);
+  const activeTileTheme = tileTheme || getTileThemeById('tile_default');
 
   // Puzzle Generation
   const [puzzle, setPuzzle] = useState(() => generatePuzzle(activeTarget));
@@ -526,15 +533,23 @@ export function GameScreen({
 
         {/* Right side controls: Theme, Sound & Coins */}
         <div className="flex items-center gap-1.5">
-          <div
+          <button
             id="game-coins-pill"
-            className="flex items-center gap-1 px-2.5 py-1 rounded-full bg-white dark:bg-slate-900 shadow-xs border border-zinc-200 dark:border-slate-800 text-xs font-bold text-zinc-800 dark:text-slate-100 transition-colors"
+            onClick={() => {
+              if (onOpenShop) {
+                playSatisfyingClick();
+                onOpenShop();
+              }
+            }}
+            className="flex items-center gap-1 px-2.5 py-1 rounded-full bg-white dark:bg-slate-900 shadow-xs border border-zinc-200 dark:border-slate-800 text-xs font-bold text-zinc-800 dark:text-slate-100 transition-all active:scale-95 hover:border-amber-400 dark:hover:border-amber-600"
+            title="Open Theme & Wallpaper Shop"
           >
             <div className="w-3.5 h-3.5 rounded-full bg-amber-400 flex items-center justify-center text-amber-950">
               <Coins className="w-2.5 h-2.5" />
             </div>
             <span className="font-mono">{coins}</span>
-          </div>
+            {onOpenShop && <Palette className="w-3 h-3 text-amber-500 ml-0.5" />}
+          </button>
 
           <ThemeToggle
             theme={theme}
@@ -749,7 +764,7 @@ export function GameScreen({
         <div
           id="word-search-grid"
           ref={gridRef}
-          className="relative grid p-2 rounded-2xl bg-white dark:bg-slate-900 shadow-md border border-zinc-200/90 dark:border-slate-800 touch-none select-none transition-colors"
+          className={`relative grid p-2 rounded-2xl shadow-md touch-none select-none transition-colors ${activeTileTheme.gridContainerClass}`}
           style={{
             gridTemplateColumns: `repeat(${puzzle.size}, minmax(0, 1fr))`,
             gap: puzzle.size >= 12 ? '2px' : '4px',
@@ -805,7 +820,7 @@ export function GameScreen({
                   ? 'rgba(16, 185, 129, 0.65)'
                   : isBonusWordCandidate
                   ? 'rgba(245, 158, 11, 0.65)'
-                  : 'rgba(59, 130, 246, 0.55)';
+                  : (activeTileTheme.highlightGlow || 'rgba(59, 130, 246, 0.55)');
 
                 const glowColor = isTargetWordCandidate
                   ? 'rgba(16, 185, 129, 0.25)'
@@ -898,7 +913,7 @@ export function GameScreen({
                     handleDragStart(rowIndex, colIndex, e.clientX, e.clientY);
                   }}
                   style={bgStyle}
-                  className={`relative z-20 flex items-center justify-center rounded-lg font-black select-none transition-all duration-75 ${
+                  className={`relative z-20 flex items-center justify-center rounded-lg font-black select-none transition-all duration-75 border ${
                     puzzle.size >= 12
                       ? 'text-xs sm:text-sm font-bold'
                       : 'text-sm sm:text-base font-black'
@@ -908,12 +923,12 @@ export function GameScreen({
                         ? 'text-emerald-950 font-black scale-105 ring-1 ring-emerald-500 shadow-xs'
                         : isBonusWordCandidate
                         ? 'text-amber-950 font-black scale-105 ring-1 ring-amber-500 shadow-xs'
-                        : 'text-blue-950 font-black scale-105 ring-1 ring-blue-500 shadow-xs'
+                        : `${activeTileTheme.selectedTextClass} font-black scale-105 ring-1 ring-blue-500 shadow-xs`
                       : isHinting
                       ? 'text-amber-950 scale-110 shadow-md ring-2 ring-amber-400 hint-flash-animation'
                       : foundColors.length > 0
                       ? 'text-zinc-950 dark:text-white font-black'
-                      : 'text-zinc-700 dark:text-slate-200 hover:bg-zinc-100/80 dark:hover:bg-slate-800/80 active:scale-95'
+                      : `${activeTileTheme.tileBgClass} ${activeTileTheme.tileTextClass} ${activeTileTheme.tileBorderClass} active:scale-95`
                   } ${isSelectionHead ? 'ring-2 ring-white/80 shadow-md scale-115' : ''}`}
                 >
                   {letter}

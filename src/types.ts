@@ -132,3 +132,47 @@ export interface AdMobConfig {
   interstitialFrequencyCap: number; // every 2nd eligible trigger
   interstitialMinIntervalSeconds: number; // 60 seconds
 }
+
+export type ShopTab = 'wallpapers' | 'tile_themes';
+
+export interface GameWallpaper {
+  id: string;
+  name: string;
+  emoji: string;
+  description: string;
+  price: number; // 0 for default
+  previewGradient: string;
+  backgroundCssLight: string;
+  backgroundCssDark: string;
+  cardBgClass: string;
+  accentColor: string;
+  textColorLight?: string;
+  textColorDark?: string;
+  badge?: string;
+  rarity?: 'standard' | 'rare' | 'legendary' | 'mythic';
+}
+
+export interface TileTheme {
+  id: string;
+  name: string;
+  emoji: string;
+  description: string;
+  price: number; // 0 for default
+  previewBg: string;
+  tileBgClass: string;
+  tileTextClass: string;
+  tileBorderClass: string;
+  gridContainerClass: string;
+  selectedBgClass: string;
+  selectedTextClass: string;
+  highlightGlow: string;
+  badge?: string;
+  rarity?: 'standard' | 'rare' | 'legendary' | 'mythic';
+}
+
+export interface CustomizationState {
+  equippedWallpaperId: string;
+  equippedTileThemeId: string;
+  purchasedWallpaperIds: string[];
+  purchasedTileThemeIds: string[];
+}

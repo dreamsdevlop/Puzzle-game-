@@ -8,6 +8,7 @@ import {
   Layers,
   Moon,
   Music,
+  Palette,
   RotateCcw,
   ShieldCheck,
   Smartphone,
@@ -20,6 +21,7 @@ import {
 } from 'lucide-react';
 import { usePWA } from '../hooks/usePWA.ts';
 import { MusicTrackId, Theme } from '../types.ts';
+import { getTileThemeById, getWallpaperById } from '../data/shopThemes.ts';
 import {
   getSfxVolume,
   isAudioEnabled,
@@ -39,6 +41,7 @@ interface SettingsModalProps {
   onToggleTheme: () => void;
   onClose: () => void;
   onTestAd?: () => void;
+  onOpenShop?: () => void;
 }
 
 export function SettingsModal({
@@ -47,6 +50,7 @@ export function SettingsModal({
   onToggleTheme,
   onClose,
   onTestAd,
+  onOpenShop,
 }: SettingsModalProps) {
   // Audio & Music local states for smooth immediate UI response
   const [sfxEnabled, setSfxEnabledState] = useState(() => Storage.getSoundEnabled());
@@ -56,6 +60,9 @@ export function SettingsModal({
   const [activeTrack, setActiveTrack] = useState<MusicTrackId>(() => Storage.getMusicTrack());
   const [hapticsEnabled, setHapticsState] = useState(() => Storage.getHapticsEnabled());
   const [activeTestSound, setActiveTestSound] = useState<'click' | 'success' | null>(null);
+  const customization = Storage.getCustomizationState();
+  const equippedWallpaper = getWallpaperById(customization.equippedWallpaperId);
+  const equippedTileTheme = getTileThemeById(customization.equippedTileThemeId);
 
   // AdMob & PWA States
   const { canInstall, isInstalled, isStandalone, installApp } = usePWA();
@@ -438,6 +445,53 @@ export function SettingsModal({
                   </>
                 )}
               </button>
+            </div>
+
+            {/* Custom Wallpapers & Tile Themes Preview */}
+            <div className="p-3 rounded-xl bg-zinc-50 dark:bg-slate-800/60 border border-zinc-200 dark:border-slate-700/80 space-y-2">
+              <div className="flex items-center justify-between">
+                <div className="flex items-center gap-2">
+                  <Palette className="w-4 h-4 text-amber-500" />
+                  <div>
+                    <span className="font-bold text-zinc-900 dark:text-slate-100 block text-xs">
+                      Custom Theme & Wallpaper
+                    </span>
+                    <span className="text-[10px] text-zinc-500 dark:text-slate-400">
+                      Spent coins on custom cosmetics
+                    </span>
+                  </div>
+                </div>
+
+                {onOpenShop && (
+                  <button
+                    id="settings-open-shop-btn"
+                    onClick={() => {
+                      playSatisfyingClick();
+                      onOpenShop();
+                    }}
+                    className="px-2.5 py-1 rounded-lg bg-amber-500 hover:bg-amber-600 text-amber-950 font-bold text-[11px] shadow-xs transition-all active:scale-95"
+                  >
+                    Open Shop
+                  </button>
+                )}
+              </div>
+
+              <div className="grid grid-cols-2 gap-2 pt-1 font-mono text-[10px] text-zinc-600 dark:text-slate-300">
+                <div className="p-2 rounded-lg bg-white dark:bg-slate-900 border border-zinc-200/80 dark:border-slate-800">
+                  <span className="text-zinc-400 dark:text-slate-500 block">Wallpaper:</span>
+                  <span className="font-semibold text-zinc-800 dark:text-slate-200 flex items-center gap-1 truncate">
+                    <span>{equippedWallpaper.emoji}</span>
+                    <span className="truncate">{equippedWallpaper.name}</span>
+                  </span>
+                </div>
+                <div className="p-2 rounded-lg bg-white dark:bg-slate-900 border border-zinc-200/80 dark:border-slate-800">
+                  <span className="text-zinc-400 dark:text-slate-500 block">Tiles:</span>
+                  <span className="font-semibold text-zinc-800 dark:text-slate-200 flex items-center gap-1 truncate">
+                    <span>{equippedTileTheme.emoji}</span>
+                    <span className="truncate">{equippedTileTheme.name}</span>
+                  </span>
+                </div>
+              </div>
             </div>
           </div>
 

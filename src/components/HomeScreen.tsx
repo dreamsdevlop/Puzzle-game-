@@ -1,4 +1,4 @@
-import { Brain, Calendar, Check, Coins, Compass, Download, Flame, Grid, Music, Play, Settings, Sparkles, Star, Volume2, VolumeX } from 'lucide-react';
+import { Brain, Calendar, Check, Coins, Compass, Download, Flame, Grid, Music, Palette, Play, Settings, Sparkles, Star, Volume2, VolumeX } from 'lucide-react';
 import { usePWA } from '../hooks/usePWA.ts';
 import { DailyChallengeDef, DailyStreakInfo, Theme } from '../types.ts';
 import { playButtonTap, playSatisfyingClick } from '../utils/audio.ts';
@@ -20,6 +20,7 @@ interface HomeScreenProps {
   onToggleSound: () => void;
   onToggleTheme: () => void;
   onOpenSettings: () => void;
+  onOpenShop?: () => void;
   onPlayLevelJourney: () => void;
   onPlayCategories: () => void;
   onPlayDailyChallenge: () => void;
@@ -39,6 +40,7 @@ export function HomeScreen({
   onToggleSound,
   onToggleTheme,
   onOpenSettings,
+  onOpenShop,
   onPlayLevelJourney,
   onPlayCategories,
   onPlayDailyChallenge,
@@ -54,16 +56,28 @@ export function HomeScreen({
     >
       {/* Top Bar: Coin pill & Sound / Theme toggles */}
       <div id="home-top-bar" className="w-full flex items-center justify-between pt-1">
-        <div
+        <button
           id="home-coins-pill"
-          className="flex items-center gap-2 px-3 py-1.5 rounded-full bg-white dark:bg-slate-900 shadow-xs border border-zinc-200/80 dark:border-slate-800 text-zinc-900 dark:text-slate-100 font-bold text-xs tracking-tight transition-colors"
+          onClick={() => {
+            if (onOpenShop) {
+              playSatisfyingClick();
+              onOpenShop();
+            }
+          }}
+          className="flex items-center gap-2 px-3 py-1.5 rounded-full bg-white dark:bg-slate-900 shadow-xs border border-zinc-200/80 dark:border-slate-800 text-zinc-900 dark:text-slate-100 font-bold text-xs tracking-tight transition-all active:scale-95 hover:border-amber-400 dark:hover:border-amber-600 group"
+          title="Open Theme & Wallpaper Shop"
         >
-          <div className="w-4 h-4 rounded-full bg-amber-400 flex items-center justify-center text-amber-950 shadow-xs">
+          <div className="w-4 h-4 rounded-full bg-amber-400 flex items-center justify-center text-amber-950 shadow-xs group-hover:scale-110 transition-transform">
             <Coins className="w-2.5 h-2.5" />
           </div>
           <span className="font-mono text-sm">{coins}</span>
           <span className="text-[10px] text-zinc-400 dark:text-slate-500 uppercase font-semibold">Coins</span>
-        </div>
+          {onOpenShop && (
+            <span className="text-[9px] bg-amber-100 dark:bg-amber-950/80 text-amber-800 dark:text-amber-300 px-1.5 py-0.5 rounded-full font-bold uppercase border border-amber-300 dark:border-amber-700">
+              Shop
+            </span>
+          )}
+        </button>
 
         <div className="flex items-center gap-1.5">
           {/* Stars Count */}
@@ -322,6 +336,36 @@ export function HomeScreen({
           <Grid className="w-4 h-4 text-zinc-500" />
           <span>Free Categories ({completedCategoriesCount}/{totalCategories} Unlocked)</span>
         </button>
+
+        {/* Theme & Wallpaper Store Button */}
+        {onOpenShop && (
+          <button
+            id="home-themes-shop-btn"
+            onClick={() => {
+              playSatisfyingClick();
+              onOpenShop();
+            }}
+            className="w-full py-2.5 px-3.5 rounded-xl bg-linear-to-r from-amber-500/10 via-purple-500/10 to-blue-500/10 hover:from-amber-500/20 hover:via-purple-500/20 hover:to-blue-500/20 border border-amber-300/70 dark:border-amber-700/60 text-zinc-800 dark:text-slate-200 font-bold text-xs tracking-wide shadow-2xs transition-all active:scale-[0.98] flex items-center justify-between group"
+          >
+            <div className="flex items-center gap-2.5">
+              <div className="w-6 h-6 rounded-lg bg-linear-to-tr from-amber-500 to-orange-500 text-white flex items-center justify-center shadow-xs group-hover:scale-105 transition-transform">
+                <Palette className="w-3.5 h-3.5" />
+              </div>
+              <div className="text-left">
+                <div className="text-xs font-black flex items-center gap-1.5 leading-tight text-zinc-900 dark:text-slate-100">
+                  <span>Theme & Wallpaper Store</span>
+                </div>
+                <div className="text-[10px] text-zinc-500 dark:text-slate-400 font-medium">
+                  Unlock custom styles with coins
+                </div>
+              </div>
+            </div>
+            <div className="flex items-center gap-1 text-[11px] font-black text-amber-700 dark:text-amber-300 bg-amber-100/80 dark:bg-amber-950/80 px-2 py-0.5 rounded-full border border-amber-300/80 dark:border-amber-700/80">
+              <Coins className="w-3 h-3 fill-amber-400 text-amber-600" />
+              <span>Shop</span>
+            </div>
+          </button>
+        )}
 
         {/* Cognitive Perks Info */}
         <div className="w-full grid grid-cols-3 gap-2 text-center text-[10px] text-zinc-500 dark:text-slate-400 pt-1 transition-colors">

@@ -7,7 +7,15 @@
  * - adFrequencyState
  */
 
-import { AudioSettings, DailyChallengeRecord, DailyStreakInfo, LevelStarRecord, MusicTrackId, Theme } from '../types.ts';
+import {
+  AudioSettings,
+  CustomizationState,
+  DailyChallengeRecord,
+  DailyStreakInfo,
+  LevelStarRecord,
+  MusicTrackId,
+  Theme,
+} from '../types.ts';
 
 const STORAGE_KEYS = {
   COINS: '@word_search_coins',
@@ -25,6 +33,10 @@ const STORAGE_KEYS = {
   AD_STATE: '@word_search_ad_state',
   DAILY_RECORDS: '@word_search_daily_records',
   DAILY_STREAK: '@word_search_daily_streak',
+  PURCHASED_WALLPAPERS: '@word_search_purchased_wallpapers',
+  EQUIPPED_WALLPAPER: '@word_search_equipped_wallpaper',
+  PURCHASED_TILE_THEMES: '@word_search_purchased_tile_themes',
+  EQUIPPED_TILE_THEME: '@word_search_equipped_tile_theme',
 };
 
 export interface AdState {
@@ -510,6 +522,165 @@ export const Storage = {
       streak: newStreak,
       isFirstToday,
       bonusCoins,
+    };
+  },
+
+  /* =========================================================
+   * Coin Usage System: Wallpaper & Theme Shop
+   * ========================================================= */
+
+  getPurchasedWallpapers(): string[] {
+    try {
+      const saved = localStorage.getItem(STORAGE_KEYS.PURCHASED_WALLPAPERS);
+      if (saved) {
+        const parsed = JSON.parse(saved);
+        if (Array.isArray(parsed) && parsed.length > 0) {
+          return parsed.includes('default') ? parsed : ['default', ...parsed];
+        }
+      }
+    } catch {
+      // fallback
+    }
+    return ['default'];
+  },
+
+  getEquippedWallpaper(): string {
+    try {
+      const saved = localStorage.getItem(STORAGE_KEYS.EQUIPPED_WALLPAPER);
+      if (saved) {
+        return saved;
+      }
+    } catch {
+      // fallback
+    }
+    return 'default';
+  },
+
+  equipWallpaper(wallpaperId: string): void {
+    try {
+      localStorage.setItem(STORAGE_KEYS.EQUIPPED_WALLPAPER, wallpaperId);
+    } catch {
+      // fallback
+    }
+  },
+
+  buyWallpaper(
+    wallpaperId: string,
+    price: number,
+  ): { success: boolean; newCoins: number; error?: string } {
+    const purchased = this.getPurchasedWallpapers();
+    if (purchased.includes(wallpaperId)) {
+      this.equipWallpaper(wallpaperId);
+      return { success: true, newCoins: this.getCoins() };
+    }
+
+    const currentCoins = this.getCoins();
+    if (currentCoins < price) {
+      return {
+        success: false,
+        newCoins: currentCoins,
+        error: `Insufficient coins. Need ${price - currentCoins} more coins!`,
+      };
+    }
+
+    // Deduct coins & record purchase
+    const newCoins = this.addCoins(-price);
+    const updatedPurchased = [...purchased, wallpaperId];
+    try {
+      localStorage.setItem(
+        STORAGE_KEYS.PURCHASED_WALLPAPERS,
+        JSON.stringify(updatedPurchased),
+      );
+    } catch {
+      // fallback
+    }
+
+    // Auto-equip upon purchase
+    this.equipWallpaper(wallpaperId);
+
+    return { success: true, newCoins };
+  },
+
+  getPurchasedTileThemes(): string[] {
+    try {
+      const saved = localStorage.getItem(STORAGE_KEYS.PURCHASED_TILE_THEMES);
+      if (saved) {
+        const parsed = JSON.parse(saved);
+        if (Array.isArray(parsed) && parsed.length > 0) {
+          return parsed.includes('tile_default')
+            ? parsed
+            : ['tile_default', ...parsed];
+        }
+      }
+    } catch {
+      // fallback
+    }
+    return ['tile_default'];
+  },
+
+  getEquippedTileTheme(): string {
+    try {
+      const saved = localStorage.getItem(STORAGE_KEYS.EQUIPPED_TILE_THEME);
+      if (saved) {
+        return saved;
+      }
+    } catch {
+      // fallback
+    }
+    return 'tile_default';
+  },
+
+  equipTileTheme(tileThemeId: string): void {
+    try {
+      localStorage.setItem(STORAGE_KEYS.EQUIPPED_TILE_THEME, tileThemeId);
+    } catch {
+      // fallback
+    }
+  },
+
+  buyTileTheme(
+    tileThemeId: string,
+    price: number,
+  ): { success: boolean; newCoins: number; error?: string } {
+    const purchased = this.getPurchasedTileThemes();
+    if (purchased.includes(tileThemeId)) {
+      this.equipTileTheme(tileThemeId);
+      return { success: true, newCoins: this.getCoins() };
+    }
+
+    const currentCoins = this.getCoins();
+    if (currentCoins < price) {
+      return {
+        success: false,
+        newCoins: currentCoins,
+        error: `Insufficient coins. Need ${price - currentCoins} more coins!`,
+      };
+    }
+
+    // Deduct coins & record purchase
+    const newCoins = this.addCoins(-price);
+    const updatedPurchased = [...purchased, tileThemeId];
+    try {
+      localStorage.setItem(
+        STORAGE_KEYS.PURCHASED_TILE_THEMES,
+        JSON.stringify(updatedPurchased),
+      );
+    } catch {
+      // fallback
+    }
+
+    // Auto-equip upon purchase
+    this.equipTileTheme(tileThemeId);
+
+    return { success: true, newCoins };
+  },
+
+  getCustomizationState(): CustomizationState {
+    return {
+      equippedWallpaperId: this.getEquippedWallpaper(),
+      equippedTileThemeId: this.getEquippedTileTheme(),
+      purchasedWallpaperIds: this.getPurchasedWallpapers(),
+      purchasedTileThemeIds: this.getPurchasedTileThemes(),
     };
   },
 };
