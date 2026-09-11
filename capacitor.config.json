@@ -8,7 +8,6 @@
   "plugins": {
     "AdMob": {
       "appId": "ca-app-pub-8857493053340063~9438377409",
-      "testingDevices": ["EMULATOR"],
       "initializeForTesting": false
     }
   }

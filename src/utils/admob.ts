@@ -83,9 +83,18 @@ async function ensureReady(): Promise<boolean> {
         initializeForTesting: false,
       });
       initialized = true;
+      console.info('[AdMob] SDK initialized for', {
+        appId: ADMOB_PRODUCTION_CONFIG.appId,
+        packageId: 'com.wordsearch.puzzle',
+      });
     }
 
     const consentInfo = await AdMob.requestConsentInfo();
+    console.info('[AdMob] Consent state:', {
+      status: consentInfo.status,
+      canRequestAds: consentInfo.canRequestAds,
+      formAvailable: consentInfo.isConsentFormAvailable,
+    });
     let currentConsent = consentInfo;
     if (
       currentConsent.isConsentFormAvailable &&
@@ -94,7 +103,10 @@ async function ensureReady(): Promise<boolean> {
       currentConsent = await AdMob.showConsentForm();
     }
 
-    if (!currentConsent.canRequestAds) return false;
+    if (!currentConsent.canRequestAds) {
+      console.warn('[AdMob] Ads blocked until consent is available or consent requirements are satisfied.');
+      return false;
+    }
 
     consentReady = true;
     return true;

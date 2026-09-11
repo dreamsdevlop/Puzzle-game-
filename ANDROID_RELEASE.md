@@ -71,3 +71,40 @@ sha256sum android/app/build/outputs/bundle/release/app-release.aab
 ## Play Console checklist
 
 Create or select the Play Console app with package ID `com.wordsearch.puzzle`, upload the AAB to an internal testing track first, complete the Data safety form, declare the app’s ads, and configure the AdMob app ID and ad units. Configure the AdMob Privacy & messaging consent form for regions where Google requires consent. Keep test ads enabled until the internal test build has been verified.
+
+## Complete AdMob readiness checklist
+
+The code-side configuration is internally consistent:
+
+| Item | Value | Location or action |
+|---|---|---|
+| Android package | `com.wordsearch.puzzle` | Must exactly match the Play Console package name and the AdMob app association |
+| AdMob app ID | `ca-app-pub-8857493053340063~9438377409` | Android manifest, Capacitor configuration, and AdMob console |
+| Primary banner unit | `ca-app-pub-8857493053340063/5636350884` | AdMob console and `src/utils/admob.ts` |
+| Banner fallback unit | `ca-app-pub-8857493053340063/5307560708` | AdMob console and `src/utils/admob.ts` |
+| Rewarded unit | `ca-app-pub-8857493053340063/3042053114` | AdMob console and `src/utils/admob.ts` |
+| Publisher ID | `pub-8857493053340063` | The root `app-ads.txt` file |
+
+The repository contains `public/app-ads.txt`, but that file is useful for AdMob only after it is deployed at the root of the developer website listed in the Google Play store listing. The final public URL must be:
+
+```text
+https://YOUR-PLAY-DEVELOPER-WEBSITE/app-ads.txt
+```
+
+It must return HTTP 200, contain the exact publisher line, and be reachable without login, redirects that break crawling, or an HTML wrapper. After publishing it, wait for Google’s crawler and confirm the status in AdMob. Hosting the file inside the APK does not replace hosting it on the developer website.
+
+In AdMob, verify that the app is linked to the exact public Play listing, the package name is correct, the app status is `Ready`, the account payment/identity verification is complete, and the Policy Center has no `Needs attention` or disapproved-app issue. New apps can have limited serving during review. A private or internal-only Play app may not be eligible for the same readiness flow as a publicly available listing.
+
+For device testing, use a registered test device or Google’s test ad units. Do not repeatedly click production ads. Install the latest APK on a physical device, grant network access, complete any consent form, and collect Android logs containing `[AdMob]`. A successful `showBanner()` call means the SDK accepted the request; the `bannerAdLoaded` and `bannerAdFailedToLoad` events are the decisive diagnostics. For rewarded ads, only the returned reward item grants the in-game reward.
+
+Expected diagnostic sequence:
+
+```text
+[AdMob] SDK initialized for ...
+[AdMob] Consent state: ...
+[AdMob] Banner loaded: ...
+[AdMob] Rewarded ad loaded: ...
+[AdMob] Reward earned: ...
+```
+
+If the log stops after initialization, inspect consent and app readiness. If it reports `failed to load`, inspect the error code, network, ad-unit activation, and fill. If it loads but does not display, inspect Android activity lifecycle, overlay placement, and device restrictions.
