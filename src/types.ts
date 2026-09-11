@@ -4,6 +4,25 @@ export type Screen = 'home' | 'category_select' | 'level_map' | 'mode_select' | 
 
 export type Theme = 'light' | 'dark';
 
+export type MusicTrackId = 'zen' | 'ocean' | 'lofi' | 'celestial' | 'rain';
+
+export interface MusicTrack {
+  id: MusicTrackId;
+  name: string;
+  emoji: string;
+  description: string;
+  vibe: string;
+}
+
+export interface AudioSettings {
+  sfxEnabled: boolean;
+  sfxVolume: number;
+  musicEnabled: boolean;
+  musicVolume: number;
+  currentTrackId: MusicTrackId;
+  hapticsEnabled: boolean;
+}
+
 export type DifficultyTier = 'Warm-Up' | 'Pattern Hunter' | 'Focus & Flow' | 'Synapse Surge' | 'Cognitive Master' | 'Genius Mind';
 
 export interface LevelDef {

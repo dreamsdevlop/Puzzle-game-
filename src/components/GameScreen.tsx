@@ -7,6 +7,7 @@ import {
   Lightbulb,
   Pause,
   RotateCcw,
+  Settings,
   Sparkles,
   Volume2,
   VolumeX,
@@ -27,6 +28,7 @@ import {
   playCorrectWord,
   playDragSwoosh,
   playGameOverDescending,
+  playSatisfyingClick,
   playSlideLetterTick,
   playWrongSelection,
 } from '../utils/audio.ts';
@@ -42,6 +44,7 @@ interface GameScreenProps {
   theme: Theme;
   onToggleSound: () => void;
   onToggleTheme: () => void;
+  onOpenSettings?: () => void;
   onLevelComplete: (data: {
     score: number;
     timeTakenSeconds: number;
@@ -62,6 +65,7 @@ export function GameScreen({
   theme,
   onToggleSound,
   onToggleTheme,
+  onOpenSettings,
   onLevelComplete,
   onBack,
   onRequestRewardedAd,
@@ -537,6 +541,20 @@ export function GameScreen({
           >
             {soundEnabled ? <Volume2 className="w-4 h-4" /> : <VolumeX className="w-4 h-4 text-zinc-400 dark:text-slate-500" />}
           </button>
+
+          {onOpenSettings && (
+            <button
+              id="game-settings-btn"
+              onClick={() => {
+                playSatisfyingClick();
+                onOpenSettings();
+              }}
+              className="p-1.5 sm:p-2 rounded-full bg-white dark:bg-slate-900 shadow-xs border border-zinc-200 dark:border-slate-800 text-zinc-600 dark:text-slate-300 hover:text-zinc-950 dark:hover:text-white transition-all active:scale-95"
+              title="Audio & Music Settings"
+            >
+              <Settings className="w-4 h-4" />
+            </button>
+          )}
         </div>
       </div>
 

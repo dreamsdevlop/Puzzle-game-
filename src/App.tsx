@@ -2,7 +2,8 @@ import { useEffect, useState } from 'react';
 import { Category, GameMode, LevelDef, LevelStarRecord, Screen, Theme } from './types.ts';
 import { CATEGORIES } from './data/categories.ts';
 import { calculateBrainRank, getLevelDef } from './data/levels.ts';
-import { setAudioEnabled } from './utils/audio.ts';
+import { initAudioSettings, setAudioEnabled } from './utils/audio.ts';
+import { MusicEngine } from './utils/musicEngine.ts';
 import { Storage } from './utils/storage.ts';
 import { AdModal } from './components/AdModal.tsx';
 import { BannerAd } from './components/BannerAd.tsx';
@@ -12,10 +13,12 @@ import { CategorySelectScreen } from './components/CategorySelectScreen.tsx';
 import { ModeSelectScreen } from './components/ModeSelectScreen.tsx';
 import { GameScreen } from './components/GameScreen.tsx';
 import { ResultsScreen } from './components/ResultsScreen.tsx';
+import { SettingsModal } from './components/SettingsModal.tsx';
 
 export default function App() {
   // Navigation & Screen state
   const [screen, setScreen] = useState<Screen>('home');
+  const [isSettingsOpen, setIsSettingsOpen] = useState(false);
 
   // Persistence State
   const [coins, setCoins] = useState(() => Storage.getCoins());
@@ -71,6 +74,28 @@ export default function App() {
     0,
   );
   const brainRank = calculateBrainRank(completedLevelCount, totalStars);
+
+  // Initialize audio settings & handle music autoplay unlocking on first user gesture
+  useEffect(() => {
+    initAudioSettings();
+
+    const handleFirstGesture = () => {
+      MusicEngine.unlockContext();
+      if (Storage.getMusicEnabled()) {
+        MusicEngine.start();
+      }
+      window.removeEventListener('pointerdown', handleFirstGesture);
+      window.removeEventListener('keydown', handleFirstGesture);
+    };
+
+    window.addEventListener('pointerdown', handleFirstGesture, { once: true });
+    window.addEventListener('keydown', handleFirstGesture, { once: true });
+
+    return () => {
+      window.removeEventListener('pointerdown', handleFirstGesture);
+      window.removeEventListener('keydown', handleFirstGesture);
+    };
+  }, []);
 
   // Sync initial sound state
   useEffect(() => {
@@ -234,6 +259,7 @@ export default function App() {
           theme={theme}
           onToggleSound={handleToggleSound}
           onToggleTheme={handleToggleTheme}
+          onOpenSettings={() => setIsSettingsOpen(true)}
           onPlayLevelJourney={handleGoToLevelJourney}
           onPlayCategories={handleGoToCategorySelect}
         />
@@ -285,6 +311,7 @@ export default function App() {
           theme={theme}
           onToggleSound={handleToggleSound}
           onToggleTheme={handleToggleTheme}
+          onOpenSettings={() => setIsSettingsOpen(true)}
           onLevelComplete={handleLevelComplete}
           onBack={() => {
             if (currentLevel) {
@@ -332,6 +359,14 @@ export default function App() {
         onRewardEarned={() => {
           adModal.onReward?.();
         }}
+      />
+
+      {/* Audio, Music & General Settings Modal */}
+      <SettingsModal
+        isOpen={isSettingsOpen}
+        theme={theme}
+        onToggleTheme={handleToggleTheme}
+        onClose={() => setIsSettingsOpen(false)}
       />
     </main>
   );

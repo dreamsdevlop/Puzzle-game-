@@ -7,7 +7,7 @@
  * - adFrequencyState
  */
 
-import { LevelStarRecord, Theme } from '../types.ts';
+import { AudioSettings, LevelStarRecord, MusicTrackId, Theme } from '../types.ts';
 
 const STORAGE_KEYS = {
   COINS: '@word_search_coins',
@@ -16,6 +16,11 @@ const STORAGE_KEYS = {
   CLAIMED_MILESTONES: '@word_search_claimed_milestones',
   HIGH_SCORES: '@word_search_high_scores',
   SOUND_ENABLED: '@word_search_sound_enabled',
+  SFX_VOLUME: '@word_search_sfx_volume',
+  MUSIC_ENABLED: '@word_search_music_enabled',
+  MUSIC_VOLUME: '@word_search_music_volume',
+  MUSIC_TRACK: '@word_search_music_track',
+  HAPTICS_ENABLED: '@word_search_haptics_enabled',
   THEME: '@word_search_theme',
   AD_STATE: '@word_search_ad_state',
 };
@@ -176,6 +181,119 @@ export const Storage = {
     } catch {
       // fallback
     }
+  },
+
+  getSfxVolume(): number {
+    try {
+      const saved = localStorage.getItem(STORAGE_KEYS.SFX_VOLUME);
+      if (saved !== null) {
+        const val = parseFloat(saved);
+        return isNaN(val) ? 0.75 : Math.max(0, Math.min(1, val));
+      }
+    } catch {
+      // fallback
+    }
+    return 0.75;
+  },
+
+  setSfxVolume(volume: number): void {
+    try {
+      localStorage.setItem(STORAGE_KEYS.SFX_VOLUME, volume.toString());
+    } catch {
+      // fallback
+    }
+  },
+
+  getMusicEnabled(): boolean {
+    try {
+      const saved = localStorage.getItem(STORAGE_KEYS.MUSIC_ENABLED);
+      if (saved !== null) {
+        return saved === 'true';
+      }
+    } catch {
+      // fallback
+    }
+    return true; // Default to relaxing background music enabled
+  },
+
+  setMusicEnabled(enabled: boolean): void {
+    try {
+      localStorage.setItem(STORAGE_KEYS.MUSIC_ENABLED, enabled.toString());
+    } catch {
+      // fallback
+    }
+  },
+
+  getMusicVolume(): number {
+    try {
+      const saved = localStorage.getItem(STORAGE_KEYS.MUSIC_VOLUME);
+      if (saved !== null) {
+        const val = parseFloat(saved);
+        return isNaN(val) ? 0.4 : Math.max(0, Math.min(1, val));
+      }
+    } catch {
+      // fallback
+    }
+    return 0.4;
+  },
+
+  setMusicVolume(volume: number): void {
+    try {
+      localStorage.setItem(STORAGE_KEYS.MUSIC_VOLUME, volume.toString());
+    } catch {
+      // fallback
+    }
+  },
+
+  getMusicTrack(): MusicTrackId {
+    try {
+      const saved = localStorage.getItem(STORAGE_KEYS.MUSIC_TRACK) as MusicTrackId;
+      if (saved && ['zen', 'ocean', 'lofi', 'celestial', 'rain'].includes(saved)) {
+        return saved;
+      }
+    } catch {
+      // fallback
+    }
+    return 'zen';
+  },
+
+  setMusicTrack(track: MusicTrackId): void {
+    try {
+      localStorage.setItem(STORAGE_KEYS.MUSIC_TRACK, track);
+    } catch {
+      // fallback
+    }
+  },
+
+  getHapticsEnabled(): boolean {
+    try {
+      const saved = localStorage.getItem(STORAGE_KEYS.HAPTICS_ENABLED);
+      if (saved !== null) {
+        return saved === 'true';
+      }
+    } catch {
+      // fallback
+    }
+    return true;
+  },
+
+  setHapticsEnabled(enabled: boolean): void {
+    try {
+      localStorage.setItem(STORAGE_KEYS.HAPTICS_ENABLED, enabled.toString());
+    } catch {
+      // fallback
+    }
+  },
+
+  getAudioSettings(): AudioSettings {
+    return {
+      sfxEnabled: this.getSoundEnabled(),
+      sfxVolume: this.getSfxVolume(),
+      musicEnabled: this.getMusicEnabled(),
+      musicVolume: this.getMusicVolume(),
+      currentTrackId: this.getMusicTrack(),
+      hapticsEnabled: this.getHapticsEnabled(),
+    };
   },
 
   getTheme(): Theme {

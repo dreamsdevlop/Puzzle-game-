@@ -1,6 +1,8 @@
-import { Brain, Coins, Compass, Grid, Play, Sparkles, Star, Volume2, VolumeX } from 'lucide-react';
+import { Brain, Coins, Compass, Grid, Music, Play, Settings, Sparkles, Star, Volume2, VolumeX } from 'lucide-react';
 import { Theme } from '../types.ts';
-import { playButtonTap } from '../utils/audio.ts';
+import { playButtonTap, playSatisfyingClick } from '../utils/audio.ts';
+import { MUSIC_TRACKS } from '../utils/musicEngine.ts';
+import { Storage } from '../utils/storage.ts';
 import { ThemeToggle } from './ThemeToggle.tsx';
 
 interface HomeScreenProps {
@@ -14,6 +16,7 @@ interface HomeScreenProps {
   theme: Theme;
   onToggleSound: () => void;
   onToggleTheme: () => void;
+  onOpenSettings: () => void;
   onPlayLevelJourney: () => void;
   onPlayCategories: () => void;
 }
@@ -29,9 +32,13 @@ export function HomeScreen({
   theme,
   onToggleSound,
   onToggleTheme,
+  onOpenSettings,
   onPlayLevelJourney,
   onPlayCategories,
 }: HomeScreenProps) {
+  const currentTrackId = Storage.getMusicTrack();
+  const currentTrack = MUSIC_TRACKS.find((t) => t.id === currentTrackId) || MUSIC_TRACKS[0];
+  const isMusicOn = Storage.getMusicEnabled();
   return (
     <div
       id="home-screen"
@@ -64,17 +71,37 @@ export function HomeScreen({
           />
 
           <button
-            id="home-sound-toggle-btn"
+            id="home-settings-btn"
             onClick={() => {
-              playButtonTap();
-              onToggleSound();
+              playSatisfyingClick();
+              onOpenSettings();
             }}
-            className="p-2 rounded-full bg-white dark:bg-slate-900 shadow-xs border border-zinc-200/80 dark:border-slate-800 text-zinc-600 dark:text-slate-300 hover:text-zinc-900 dark:hover:text-white transition-all active:scale-95"
-            title={soundEnabled ? 'Mute Sound' : 'Enable Sound'}
+            className="p-2 rounded-full bg-white dark:bg-slate-900 shadow-xs border border-zinc-200/80 dark:border-slate-800 text-zinc-600 dark:text-slate-300 hover:text-zinc-900 dark:hover:text-white transition-all active:scale-95 flex items-center justify-center"
+            title="Audio & Music Settings"
           >
-            {soundEnabled ? <Volume2 className="w-4 h-4" /> : <VolumeX className="w-4 h-4 text-zinc-400 dark:text-slate-500" />}
+            <Settings className="w-4 h-4" />
           </button>
         </div>
+      </div>
+
+      {/* Relaxing Ambience Status Pill */}
+      <div className="w-full flex justify-center pt-2">
+        <button
+          id="home-music-pill-btn"
+          onClick={() => {
+            playSatisfyingClick();
+            onOpenSettings();
+          }}
+          className="flex items-center gap-1.5 px-3 py-1 rounded-full bg-white/80 dark:bg-slate-900/80 border border-zinc-200/80 dark:border-slate-800 text-[11px] font-bold text-zinc-600 dark:text-slate-300 hover:text-blue-600 dark:hover:text-blue-400 hover:border-blue-300 dark:hover:border-blue-700 shadow-2xs transition-all active:scale-95"
+        >
+          <Music className={`w-3 h-3 ${isMusicOn ? 'text-blue-600 dark:text-blue-400 animate-bounce' : 'text-zinc-400'}`} />
+          <span>
+            {isMusicOn ? `Playing: ${currentTrack.name}` : 'Ambience Muted — Tap for Music'}
+          </span>
+          <span className="text-[10px] text-zinc-400 dark:text-slate-500 font-normal">
+            ⚙️
+          </span>
+        </button>
       </div>
 
       {/* Main Logo & Title Hero */}
