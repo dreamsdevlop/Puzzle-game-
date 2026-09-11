@@ -1,4 +1,4 @@
-import { useEffect } from 'react';
+import { useEffect, useState } from 'react';
 import { Brain, Calendar, CheckCircle2, ChevronRight, Coins, Flame, Home, MapPin, Palette, RotateCcw, Sparkles, Star } from 'lucide-react';
 import confetti from 'canvas-confetti';
 import { Category, DailyChallengeDef, GameMode, LevelDef, Theme } from '../types.ts';
@@ -26,6 +26,7 @@ interface ResultsScreenProps {
   onGoToLevelMap?: () => void;
   onHome: () => void;
   onOpenShop?: () => void;
+  onRequestRewardedAd?: (onSuccess: () => void) => void;
 }
 
 export function triggerGrandCelebration() {
@@ -113,7 +114,10 @@ export function ResultsScreen({
   onGoToLevelMap,
   onHome,
   onOpenShop,
+  onRequestRewardedAd,
 }: ResultsScreenProps) {
+  const [doubleRewardClaimed, setDoubleRewardClaimed] = useState(false);
+
   useEffect(() => {
     // Play victory sound
     if (dailyChallenge || level) {
@@ -314,6 +318,46 @@ export function ResultsScreen({
             +{coinsEarned}
           </div>
         </div>
+
+        {onRequestRewardedAd && !doubleRewardClaimed && coinsEarned > 0 && (
+          <div
+            id="results-double-coins-offer"
+            className="w-full mt-2.5 p-3 rounded-2xl bg-linear-to-r from-indigo-500/10 via-purple-500/10 to-blue-500/10 border border-indigo-300/70 dark:border-indigo-700/70 flex items-center justify-between gap-3 shadow-xs"
+          >
+            <div className="flex items-center gap-2 text-left">
+              <div className="w-8 h-8 rounded-xl bg-indigo-600 text-white flex items-center justify-center shadow-xs">
+                <Sparkles className="w-4 h-4" />
+              </div>
+              <div>
+                <div className="text-xs font-black text-indigo-950 dark:text-indigo-100">
+                  Double your coins
+                </div>
+                <div className="text-[10px] text-indigo-800 dark:text-indigo-300 font-medium">
+                  Optional rewarded video • +{coinsEarned} extra coins
+                </div>
+              </div>
+            </div>
+            <button
+              id="results-double-coins-btn"
+              type="button"
+              onClick={() => {
+                playSatisfyingClick();
+                onRequestRewardedAd(() => {
+                  setDoubleRewardClaimed(true);
+                });
+              }}
+              className="shrink-0 rounded-xl bg-indigo-600 px-3 py-2 text-[11px] font-black text-white shadow-md shadow-indigo-500/20 transition-all hover:bg-indigo-700 active:scale-95"
+            >
+              Watch
+            </button>
+          </div>
+        )}
+
+        {doubleRewardClaimed && (
+          <div className="w-full mt-2.5 rounded-2xl border border-emerald-300/70 bg-emerald-50 p-2.5 text-center text-xs font-bold text-emerald-700 dark:border-emerald-800/70 dark:bg-emerald-950/40 dark:text-emerald-300">
+            Reward doubled. Your bonus coins are ready.
+          </div>
+        )}
 
         {/* Mythic Themes Goal & Store Teaser Banner */}
         <div

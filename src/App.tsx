@@ -424,6 +424,13 @@ export default function App() {
           onGoToLevelMap={activeDailyChallenge ? undefined : () => setScreen('level_map')}
           onHome={handleGoHome}
           onOpenShop={() => setIsShopOpen(true)}
+          onRequestRewardedAd={(onSuccess) => {
+            handleRequestRewardedAd(() => {
+              const updatedCoins = Storage.addCoins(resultsData.coinsEarned);
+              setCoins(updatedCoins);
+              onSuccess();
+            });
+          }}
         />
       )}
 
