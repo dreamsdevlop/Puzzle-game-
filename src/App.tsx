@@ -434,8 +434,8 @@ export default function App() {
         />
       )}
 
-      {/* Native AdMob banner; never cover the active puzzle board. */}
-      <BannerAd visible={screen !== 'game'} />
+      {/* Native AdMob banner stays visible, with a reserved strip below every screen. */}
+      <BannerAd visible />
 
       {/* AdMob Simulation Modal */}
       <AdModal

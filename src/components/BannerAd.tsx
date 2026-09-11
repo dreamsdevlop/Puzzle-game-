@@ -24,7 +24,7 @@ export function BannerAd({ className = '', visible = true }: BannerAdProps) {
   return (
     <div
       aria-hidden="true"
-      className={`h-[52px] w-full shrink-0 bg-transparent ${className}`}
+      className={`h-[60px] w-full shrink-0 bg-transparent ${className}`}
     />
   );
 }
