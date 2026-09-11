@@ -13,6 +13,7 @@ export interface AdMobUnitConfig {
   publisherId: string;
   appId: string;
   bannerId: string;
+  bannerFallbackId?: string;
   bannerName: string;
   interstitialId: string;
   rewardedId: string;
@@ -24,6 +25,7 @@ export const ADMOB_PRODUCTION_CONFIG: AdMobUnitConfig = {
   publisherId: 'pub-8857493053340063',
   appId: 'ca-app-pub-8857493053340063~9438377409',
   bannerId: 'ca-app-pub-8857493053340063/5636350884',
+  bannerFallbackId: 'ca-app-pub-8857493053340063/5307560708',
   bannerName: 'Puzzle Game Banner',
   interstitialId: import.meta.env.VITE_ADMOB_INTERSTITIAL_ID || '',
   rewardedId: import.meta.env.VITE_ADMOB_REWARDED_ID || 'ca-app-pub-8857493053340063/3042053114',
@@ -77,19 +79,27 @@ export const AdMobManager = {
 
   async showBanner(): Promise<boolean> {
     if (!(await ensureReady())) return false;
-    try {
-      await AdMob.showBanner({
-        adId: ADMOB_PRODUCTION_CONFIG.bannerId,
-        adSize: BannerAdSize.ADAPTIVE_BANNER,
-        position: BannerAdPosition.BOTTOM_CENTER,
-        margin: 0,
-      });
-      bannerVisible = true;
-      return true;
-    } catch (error) {
-      console.warn('[AdMob] Banner unavailable:', error);
-      return false;
+    const bannerIds = [
+      ADMOB_PRODUCTION_CONFIG.bannerId,
+      ADMOB_PRODUCTION_CONFIG.bannerFallbackId,
+    ].filter((id): id is string => Boolean(id));
+
+    for (const adId of bannerIds) {
+      try {
+        await AdMob.showBanner({
+          adId,
+          adSize: BannerAdSize.ADAPTIVE_BANNER,
+          position: BannerAdPosition.BOTTOM_CENTER,
+          margin: 0,
+        });
+        bannerVisible = true;
+        return true;
+      } catch (error) {
+        console.warn(`[AdMob] Banner unit ${adId} unavailable:`, error);
+      }
     }
+
+    return false;
   },
 
   async hideBanner(): Promise<void> {
