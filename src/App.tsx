@@ -31,8 +31,8 @@ export default function App() {
   );
 
   // Today's Daily Challenge Definition & Streak State
-  const todayKey = useMemo(() => getTodayDateKey(), []);
-  const todayChallenge = useMemo(() => getDailyChallengeForDate(new Date()), []);
+  const [todayKey, setTodayKey] = useState(() => getTodayDateKey());
+  const todayChallenge = useMemo(() => getDailyChallengeForDate(new Date(`${todayKey}T12:00:00`)), [todayKey]);
   const [dailyStreak, setDailyStreak] = useState<DailyStreakInfo>(() =>
     Storage.getDailyStreak(getTodayDateKey()),
   );
@@ -127,6 +127,20 @@ export default function App() {
 
   useEffect(() => {
     void AdMobManager.initialize();
+  }, []);
+
+  useEffect(() => {
+    const refreshToday = () => {
+      const nextKey = getTodayDateKey();
+      setTodayKey((current) => (current === nextKey ? current : nextKey));
+      setDailyStreak(Storage.getDailyStreak(nextKey));
+    };
+    const interval = window.setInterval(refreshToday, 60_000);
+    window.addEventListener('visibilitychange', refreshToday);
+    return () => {
+      window.clearInterval(interval);
+      window.removeEventListener('visibilitychange', refreshToday);
+    };
   }, []);
 
   // Sync initial sound state

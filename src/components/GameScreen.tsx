@@ -641,6 +641,23 @@ export function GameScreen({
           )}
         </div>
 
+        <div className="flex min-w-20 flex-col items-center gap-0.5" aria-label={`${foundWords.length} of ${targetWords.length} words found`}>
+          <span className="text-[10px] font-bold uppercase tracking-wider text-zinc-400 dark:text-slate-500">
+            Focus
+          </span>
+          <div className="flex items-center gap-1.5">
+            <div className="h-1.5 w-12 overflow-hidden rounded-full bg-zinc-200 dark:bg-slate-700">
+              <div
+                className="h-full rounded-full bg-linear-to-r from-blue-500 to-emerald-400 transition-all duration-500"
+                style={{ width: `${Math.round((foundWords.length / targetWords.length) * 100)}%` }}
+              />
+            </div>
+            <span className="font-mono text-[10px] font-bold text-zinc-600 dark:text-slate-300">
+              {foundWords.length}/{targetWords.length}
+            </span>
+          </div>
+        </div>
+
         {/* Timer Pill */}
         <div
           id="game-timer-pill"

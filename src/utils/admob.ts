@@ -4,8 +4,10 @@ import { Capacitor } from '@capacitor/core';
 import {
   AdMob,
   AdmobConsentStatus,
+  BannerAdPluginEvents,
   BannerAdPosition,
   BannerAdSize,
+  RewardAdPluginEvents,
 } from '@capacitor-community/admob';
 
 export interface AdMobUnitConfig {
@@ -35,14 +37,47 @@ export const ADMOB_PRODUCTION_CONFIG: AdMobUnitConfig = {
 let initialized = false;
 let consentReady = false;
 let bannerVisible = false;
+let diagnosticsAttached = false;
 
 const isNative = () => Capacitor.isNativePlatform();
+
+async function attachDiagnostics(): Promise<void> {
+  if (!isNative() || diagnosticsAttached) return;
+  diagnosticsAttached = true;
+  const addListener = AdMob.addListener.bind(AdMob) as (
+    eventName: string,
+    listener: (payload?: unknown) => void,
+  ) => Promise<unknown>;
+
+  await addListener(BannerAdPluginEvents.Loaded, (info) => {
+    console.info('[AdMob] Banner loaded:', info);
+  });
+  await addListener(BannerAdPluginEvents.FailedToLoad, (error) => {
+    console.warn('[AdMob] Banner failed to load:', error);
+  });
+  await addListener(BannerAdPluginEvents.AdImpression, (data) => {
+    console.info('[AdMob] Banner impression:', data);
+  });
+  await addListener(RewardAdPluginEvents.Loaded, (info) => {
+    console.info('[AdMob] Rewarded ad loaded:', info);
+  });
+  await addListener(RewardAdPluginEvents.FailedToLoad, (error) => {
+    console.warn('[AdMob] Rewarded ad failed to load:', error);
+  });
+  await addListener(RewardAdPluginEvents.FailedToShow, (error) => {
+    console.warn('[AdMob] Rewarded ad failed to show:', error);
+  });
+  await addListener(RewardAdPluginEvents.Rewarded, (reward) => {
+    console.info('[AdMob] Reward earned:', reward);
+  });
+}
 
 async function ensureReady(): Promise<boolean> {
   if (!isNative()) return false;
   if (initialized && consentReady) return true;
 
   try {
+    await attachDiagnostics();
     if (!initialized) {
       await AdMob.initialize({
         initializeForTesting: false,
@@ -142,8 +177,8 @@ export const AdMobManager = {
     if (!ADMOB_PRODUCTION_CONFIG.rewardedId || !(await ensureReady())) return false;
     try {
       await AdMob.prepareRewardVideoAd({ adId: ADMOB_PRODUCTION_CONFIG.rewardedId });
-      await AdMob.showRewardVideoAd({ adId: ADMOB_PRODUCTION_CONFIG.rewardedId });
-      return true;
+      const reward = await AdMob.showRewardVideoAd({ adId: ADMOB_PRODUCTION_CONFIG.rewardedId });
+      return Boolean(reward && reward.amount > 0);
     } catch (error) {
       console.warn('[AdMob] Rewarded ad unavailable. Check app readiness, consent, and rewarded-unit activation:', error);
       return false;
