@@ -126,6 +126,10 @@ export default function App() {
   }, []);
 
   useEffect(() => {
+    if (!AdMobManager.isNative()) {
+      console.info('[AdMob] Web/PWA runtime detected; native AdMob is disabled.');
+      return;
+    }
     void AdMobManager.initialize();
   }, []);
 

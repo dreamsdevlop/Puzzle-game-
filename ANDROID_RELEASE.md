@@ -1,10 +1,10 @@
 # Android release and AdMob setup
 
-The repository is a Capacitor Android app for the puzzle game. Native ads use `@capacitor-community/admob`; the browser build remains playable without native ad calls.
+The repository is a Capacitor Android app for the puzzle game. The web technologies are used only as the embedded game UI inside the Android WebView. The APK/AAB is a native Android package with a native AdMob SDK and native Android ad activities; the browser/PWA build intentionally has no AdMob calls.
 
 ## Ad behavior
 
-The app requests AdMob consent before initializing the SDK. A native adaptive banner appears on non-game screens and is hidden during active puzzle play so it cannot cover the board. Interstitials run only after puzzle completion when the existing frequency cap allows them. Rewarded ads are requested only when the player explicitly asks for a reward. If consent, network access, or an ad load is unavailable, the game continues normally.
+The Android app requests AdMob consent before initializing the SDK. A native adaptive banner appears in the Android package and is hidden when the game requests it. Interstitials run only after puzzle completion when the existing frequency cap allows them. Rewarded ads are requested only when the player explicitly asks for a reward. If consent, network access, or an ad load is unavailable, the game continues normally. In a browser/PWA, the native AdMob manager is disabled because AdMob does not serve web pages.
 
 The app is configured for the supplied production AdMob app and units. The Android app ID is in `android/app/src/main/res/values/strings.xml` and `capacitor.config.json`; the banner and rewarded units are kept in `src/utils/admob.ts`. Ad unit IDs are intentionally not shown in the game settings UI.
 

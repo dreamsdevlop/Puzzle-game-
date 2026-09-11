@@ -8,6 +8,8 @@ interface BannerAdProps {
 
 export function BannerAd({ className = '', visible = true }: BannerAdProps) {
   useEffect(() => {
+    if (!AdMobManager.isNative()) return;
+
     if (!visible) {
       void AdMobManager.hideBanner();
       return;
