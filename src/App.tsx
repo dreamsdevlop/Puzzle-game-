@@ -7,6 +7,7 @@ import { initAudioSettings, setAudioEnabled } from './utils/audio.ts';
 import { getDailyChallengeForDate, getTodayDateKey } from './utils/dailyChallenge.ts';
 import { MusicEngine } from './utils/musicEngine.ts';
 import { Storage } from './utils/storage.ts';
+import { AdMobManager } from './utils/admob.ts';
 import { AdModal } from './components/AdModal.tsx';
 import { BannerAd } from './components/BannerAd.tsx';
 import { HomeScreen } from './components/HomeScreen.tsx';
@@ -122,6 +123,10 @@ export default function App() {
       window.removeEventListener('pointerdown', handleFirstGesture);
       window.removeEventListener('keydown', handleFirstGesture);
     };
+  }, []);
+
+  useEffect(() => {
+    void AdMobManager.initialize();
   }, []);
 
   // Sync initial sound state
@@ -422,8 +427,8 @@ export default function App() {
         />
       )}
 
-      {/* AdMob Persistent Banner Ad */}
-      <BannerAd />
+      {/* Native AdMob banner; never cover the active puzzle board. */}
+      <BannerAd visible={screen !== 'game'} />
 
       {/* AdMob Simulation Modal */}
       <AdModal

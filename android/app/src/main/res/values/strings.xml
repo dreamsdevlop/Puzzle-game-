@@ -1,0 +1,8 @@
+<?xml version='1.0' encoding='utf-8'?>
+<resources>
+    <string name="app_name">Game puzzle</string>
+    <string name="title_activity_main">Game puzzle</string>
+    <string name="package_name">com.wordsearch.puzzle</string>
+    <string name="custom_url_scheme">com.wordsearch.puzzle</string>
+    <string name="admob_app_id">ca-app-pub-8857493053340063~9438377409</string>
+</resources>
