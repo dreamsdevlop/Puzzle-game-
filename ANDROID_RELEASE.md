@@ -6,16 +6,16 @@ The repository is a Capacitor Android app for the puzzle game. Native ads use `@
 
 The app requests AdMob consent before initializing the SDK. A native adaptive banner appears on non-game screens and is hidden during active puzzle play so it cannot cover the board. Interstitials run only after puzzle completion when the existing frequency cap allows them. Rewarded ads are requested only when the player explicitly asks for a reward. If consent, network access, or an ad load is unavailable, the game continues normally.
 
-Development builds use Google’s official test units when `VITE_ADMOB_TEST_MODE=true` or when using Vite development mode. The configured production Android app ID is in `android/app/src/main/res/values/strings.xml` and `capacitor.config.json`.
+The app is configured for the supplied production AdMob app and units. The Android app ID is in `android/app/src/main/res/values/strings.xml` and `capacitor.config.json`; the banner and rewarded units are kept in `src/utils/admob.ts`. Ad unit IDs are intentionally not shown in the game settings UI.
 
 Before release, configure the production rewarded unit in the build environment:
 
 ```bash
-export VITE_ADMOB_TEST_MODE=false
-export VITE_ADMOB_REWARDED_ID="ca-app-pub-XXXXXXXXXXXXXXX/XXXXXXXXXX"
+export VITE_ADMOB_REWARDED_ID="ca-app-pub-8857493053340063/3042053114"
+export VITE_ADMOB_INTERSTITIAL_ID=""
 ```
 
-The existing production banner and interstitial units are in `src/utils/admob.ts`. Replace them there only if the AdMob account uses different units. Never use production units while testing on personal devices; use test mode or registered test devices.
+The configured production banner unit is `ca-app-pub-8857493053340063/5636350884`. A dedicated interstitial unit is not configured, so interstitial requests safely no-op until one is supplied. The supplied rewarded unit is `ca-app-pub-8857493053340063/3042053114`. Do not repeatedly click live ads during testing; use AdMob’s registered test devices or a separately configured test build to avoid invalid traffic.
 
 ## Prerequisites
 

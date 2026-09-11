@@ -6,6 +6,7 @@
   "scripts": {
     "dev": "vite --port=3000 --host=0.0.0.0",
     "build": "vite build",
+    "android:icons": "node scripts/generate-android-icons.js",
     "android:sync": "npm run build && npx cap sync android",
     "android:bundle": "npm run android:sync && cd android && ./gradlew bundleRelease",
     "preview": "vite preview",

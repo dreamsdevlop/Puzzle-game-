@@ -23,32 +23,18 @@ export const ADMOB_PRODUCTION_CONFIG: AdMobUnitConfig = {
   appName: 'Game puzzle',
   publisherId: 'pub-8857493053340063',
   appId: 'ca-app-pub-8857493053340063~9438377409',
-  bannerId: 'ca-app-pub-8857493053340063/5307560708',
-  bannerName: 'Banner ad',
-  interstitialId: 'ca-app-pub-8857493053340063/3042053114',
-  rewardedId: import.meta.env.VITE_ADMOB_REWARDED_ID || '',
-  rewardedName: 'Rewarded ad',
+  bannerId: 'ca-app-pub-8857493053340063/5636350884',
+  bannerName: 'Puzzle Game Banner',
+  interstitialId: import.meta.env.VITE_ADMOB_INTERSTITIAL_ID || '',
+  rewardedId: import.meta.env.VITE_ADMOB_REWARDED_ID || 'ca-app-pub-8857493053340063/3042053114',
+  rewardedName: 'Puzzle Game Rewarded Ad',
 };
 
-export const ADMOB_TEST_CONFIG: AdMobUnitConfig = {
-  appName: 'Game puzzle (Test Mode)',
-  publisherId: 'pub-3940256099942544',
-  appId: 'ca-app-pub-3940256099942544~3347511713',
-  bannerId: 'ca-app-pub-3940256099942544/6300978111',
-  bannerName: 'Sample test banner',
-  interstitialId: 'ca-app-pub-3940256099942544/1033173712',
-  rewardedId: 'ca-app-pub-3940256099942544/5224354917',
-  rewardedName: 'Sample test rewarded ad',
-};
-
-const TEST_MODE_KEY = '@word_search_admob_test_mode';
 let initialized = false;
 let consentReady = false;
 let bannerVisible = false;
 
 const isNative = () => Capacitor.isNativePlatform();
-
-const isBuildTestMode = () => import.meta.env.VITE_ADMOB_TEST_MODE === 'true' || import.meta.env.DEV;
 
 async function ensureReady(): Promise<boolean> {
   if (!isNative()) return false;
@@ -67,8 +53,7 @@ async function ensureReady(): Promise<boolean> {
     if (!currentConsent.canRequestAds) return false;
 
     await AdMob.initialize({
-      initializeForTesting: isBuildTestMode() || AdMobManager.isTestMode(),
-      testingDevices: ['EMULATOR'],
+      initializeForTesting: false,
     });
     initialized = true;
     consentReady = true;
@@ -80,28 +65,8 @@ async function ensureReady(): Promise<boolean> {
 }
 
 export const AdMobManager = {
-  getProductionConfig(): AdMobUnitConfig {
-    return ADMOB_PRODUCTION_CONFIG;
-  },
-
-  isTestMode(): boolean {
-    try {
-      return isBuildTestMode() || localStorage.getItem(TEST_MODE_KEY) === 'true';
-    } catch {
-      return isBuildTestMode();
-    }
-  },
-
-  setTestMode(enabled: boolean): void {
-    try {
-      localStorage.setItem(TEST_MODE_KEY, String(enabled));
-    } catch {
-      // Native ad configuration still falls back to build-time mode.
-    }
-  },
-
   getActiveConfig(): AdMobUnitConfig {
-    return this.isTestMode() ? ADMOB_TEST_CONFIG : ADMOB_PRODUCTION_CONFIG;
+    return ADMOB_PRODUCTION_CONFIG;
   },
 
   isNative,
@@ -114,7 +79,7 @@ export const AdMobManager = {
     if (!(await ensureReady())) return false;
     try {
       await AdMob.showBanner({
-        adId: this.getActiveConfig().bannerId,
+        adId: ADMOB_PRODUCTION_CONFIG.bannerId,
         adSize: BannerAdSize.ADAPTIVE_BANNER,
         position: BannerAdPosition.BOTTOM_CENTER,
         margin: 0,
@@ -148,11 +113,10 @@ export const AdMobManager = {
   },
 
   async showInterstitial(): Promise<boolean> {
-    if (!(await ensureReady())) return false;
+    if (!ADMOB_PRODUCTION_CONFIG.interstitialId || !(await ensureReady())) return false;
     try {
-      const adId = this.getActiveConfig().interstitialId;
-      await AdMob.prepareInterstitial({ adId });
-      await AdMob.showInterstitial({ adId });
+      await AdMob.prepareInterstitial({ adId: ADMOB_PRODUCTION_CONFIG.interstitialId });
+      await AdMob.showInterstitial({ adId: ADMOB_PRODUCTION_CONFIG.interstitialId });
       return true;
     } catch (error) {
       console.warn('[AdMob] Interstitial unavailable:', error);
@@ -161,12 +125,10 @@ export const AdMobManager = {
   },
 
   async showRewarded(): Promise<boolean> {
-    if (!(await ensureReady())) return false;
+    if (!ADMOB_PRODUCTION_CONFIG.rewardedId || !(await ensureReady())) return false;
     try {
-      const adId = this.getActiveConfig().rewardedId;
-      if (!adId) return false;
-      await AdMob.prepareRewardVideoAd({ adId });
-      await AdMob.showRewardVideoAd({ adId });
+      await AdMob.prepareRewardVideoAd({ adId: ADMOB_PRODUCTION_CONFIG.rewardedId });
+      await AdMob.showRewardVideoAd({ adId: ADMOB_PRODUCTION_CONFIG.rewardedId });
       return true;
     } catch (error) {
       console.warn('[AdMob] Rewarded ad unavailable:', error);

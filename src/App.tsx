@@ -453,16 +453,6 @@ export default function App() {
           setIsSettingsOpen(false);
           setIsShopOpen(true);
         }}
-        onTestAd={() => {
-          setAdModal({
-            isOpen: true,
-            type: 'rewarded',
-            onReward: () => {
-              const newCoins = Storage.addCoins(25);
-              setCoins(newCoins);
-            },
-          });
-        }}
       />
 
       {/* Theme & Wallpaper Customization Store Modal */}
