@@ -454,12 +454,19 @@ export default function App() {
       )}
 
       <WebAdSafeStyles />
-      <WebAdSlots screen={screen} />
-      <WebAdFooter />
-      <WebAdRail />
+      {!isSettingsOpen && !isShopOpen && <WebAdSlots screen={screen} />}
+      {!isSettingsOpen && !isShopOpen && <WebAdFooter />}
+      {!isSettingsOpen && !isShopOpen && <WebAdRail />}
 
-      {/* Native AdMob banner stays visible, with a reserved strip below every screen. */}
-      <BannerAd visible />
+      {/* Native Android AdMob banner: natural breakpoints only, never during active solving. */}
+      <BannerAd
+        visible={
+          AdMobManager.isNative() &&
+          screen !== 'game' &&
+          !isSettingsOpen &&
+          !isShopOpen
+        }
+      />
 
       {/* AdMob Simulation Modal */}
       <AdModal
