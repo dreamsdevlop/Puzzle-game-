@@ -1,6 +1,6 @@
 {
   "appId": "com.wordsearch.puzzle",
-  "appName": "Game puzzle",
+  "appName": "Word Quest: Brain Search",
   "webDir": "dist",
   "server": {
     "androidScheme": "https"

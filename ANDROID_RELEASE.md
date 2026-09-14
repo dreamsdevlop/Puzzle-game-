@@ -1,4 +1,4 @@
-# Android release and AdMob setup
+# Word Quest: Brain Search — Android release and AdMob setup
 
 The repository is a Capacitor Android app for the puzzle game. The web technologies are used only as the embedded game UI inside the Android WebView. The APK/AAB is a native Android package with a native AdMob SDK and native Android ad activities; the browser/PWA build intentionally has no AdMob calls.
 
@@ -74,7 +74,7 @@ sha256sum android/app/build/outputs/bundle/release/app-release.aab
 
 ## Play Console checklist
 
-Create or select the Play Console app with package ID `com.wordsearch.puzzle`, upload the AAB to an internal testing track first, complete the Data safety form, declare the app’s ads, and configure the AdMob app ID and ad units. Configure the AdMob Privacy & messaging consent form for regions where Google requires consent. Keep test ads enabled until the internal test build has been verified.
+Create a new Play Console app named `Word Quest: Brain Search` with package ID `com.wordsearch.puzzle`, upload the signed AAB to an internal testing track first, complete the Data safety form, declare the app’s ads, and configure the AdMob app ID and ad units. Configure the AdMob Privacy & messaging consent form for regions where Google requires consent. Keep test ads enabled until the internal test build has been verified.
 
 ## Complete AdMob readiness checklist
 

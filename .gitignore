@@ -15,3 +15,4 @@ android/app/*.apk
 *.jks
 *.keystore
 keystore.properties
+android/keystore.properties
