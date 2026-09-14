@@ -6,6 +6,8 @@ The repository is a Capacitor Android app for the puzzle game. The web technolog
 
 The Android app requests AdMob consent before initializing the SDK. A native adaptive banner appears in the Android package and is hidden when the game requests it. Interstitials run only after puzzle completion when the existing frequency cap allows them. Rewarded ads are requested only when the player explicitly asks for a reward. If consent, network access, or an ad load is unavailable, the game continues normally. In a browser/PWA, the native AdMob manager is disabled because AdMob does not serve web pages.
 
+The Android launch screen uses a branded Word Quest splash with the game logo, blue puzzle palette, and the `Word Quest: Brain Search` title. It is configured through the AndroidX SplashScreen theme and appears before the WebView game interface loads.
+
 ## Dual-network placement policy
 
 The browser build uses the supplied web-network iframe placements on home, level-map, and results screens. It does not load those web scripts during active puzzle solving, settings, or the theme shop. The Android build uses native AdMob instead of the web-network slots. Its adaptive banner appears only at natural navigation breakpoints such as home, level map, category selection, mode selection, and results. It is hidden during active solving and while settings or the shop is open. Rewarded AdMob ads remain opt-in and are used only for explicit hint, shop, or post-result rewards. This separation avoids stacked ads, accidental double monetization, and ads covering the core puzzle interaction.
