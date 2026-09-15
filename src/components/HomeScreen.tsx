@@ -142,51 +142,28 @@ export function HomeScreen({
       </div>
 
       {/* Main Logo & Title Hero */}
-      <div id="home-hero" className="flex flex-col items-center text-center my-auto py-4">
+      <div id="home-hero" className="brand-panel relative flex w-full flex-col items-center text-center my-auto py-7 px-5 rounded-[2rem] overflow-hidden text-white">
         {/* Animated Stylized Word Search Logo */}
-        <div className="relative mb-5">
+        <div className="relative mb-4">
           {/* Decorative backdrop glow */}
           <div className="absolute -inset-2 rounded-3xl bg-linear-to-tr from-[#2f80ed]/25 via-[#ff8c1a]/20 to-[#f83f8f]/25 blur-lg -z-10 dark:from-blue-600/30 dark:to-purple-600/30" />
 
-          {/* Stylized 3x3 letter puzzle logo block */}
-          <div className="grid grid-cols-3 gap-1.5 p-3 rounded-2xl bg-white dark:bg-slate-900 shadow-md border border-zinc-200/70 dark:border-slate-800 transition-colors">
-            {['W', 'O', 'R', 'S', 'E', 'A', 'R', 'C', 'H'].map((letter, idx) => {
-              const bgColors = [
-                'bg-blue-500 text-white',
-                'bg-amber-400 text-amber-950',
-                'bg-pink-500 text-white',
-                'bg-emerald-500 text-white',
-                'bg-purple-500 text-white',
-                'bg-orange-500 text-white',
-                'bg-teal-500 text-white',
-                'bg-rose-500 text-white',
-                'bg-indigo-500 text-white',
-              ];
-              return (
-                <div
-                  key={idx}
-                  className={`w-9 h-9 sm:w-10 sm:h-10 rounded-xl flex items-center justify-center font-black text-base sm:text-lg shadow-xs ${bgColors[idx]} transform transition-transform hover:scale-105`}
-                >
-                  {letter}
-                </div>
-              );
-            })}
-          </div>
+          <img src="/icon.svg" alt="Word Quest logo" className="h-32 w-32 rounded-[2rem] shadow-2xl ring-4 ring-white/20" />
 
           <div className="absolute -bottom-2 -right-2 bg-amber-400 text-amber-950 p-1.5 rounded-full shadow-md">
             <Sparkles className="w-4 h-4 fill-amber-950" />
           </div>
         </div>
 
-        <h1 className="text-3xl sm:text-4xl font-black text-[#1a1a1a] dark:text-slate-50 tracking-tight mb-1.5 transition-colors">
-          WORD SEARCH
+        <h1 className="text-3xl sm:text-4xl font-black tracking-tight mb-1.5 text-white">
+          Word Quest
         </h1>
-        <p className="text-xs sm:text-sm text-zinc-500 dark:text-slate-400 max-w-xs font-medium leading-relaxed mb-3 transition-colors">
-          Boost your mind and reflexes through 50+ cognitive progression levels and 15 rich categories!
+        <p className="text-sm sm:text-base text-blue-100 max-w-xs font-semibold leading-relaxed mb-3">
+          Brain Search
         </p>
 
         {/* Brain Rank Badge */}
-        <div className="inline-flex items-center gap-2 px-3 py-1.5 rounded-full bg-blue-50 dark:bg-blue-950/60 border border-blue-200 dark:border-blue-800 text-xs font-bold text-blue-800 dark:text-blue-200 shadow-2xs">
+        <div className="inline-flex items-center gap-2 px-3 py-1.5 rounded-full bg-white/15 border border-white/25 text-xs font-bold text-white shadow-2xs backdrop-blur-sm">
           <Brain className="w-4 h-4 text-blue-600 dark:text-blue-400" />
           <span>{brainRankTitle}</span>
           <span className="text-[10px] px-1.5 py-0.2 rounded-full bg-blue-200 dark:bg-blue-900 font-mono">
@@ -300,7 +277,7 @@ export function HomeScreen({
             playButtonTap();
             onPlayLevelJourney();
           }}
-          className="relative group w-full py-4 rounded-2xl bg-blue-600 hover:bg-blue-700 text-white font-black text-base tracking-wide shadow-lg shadow-blue-500/30 transition-all duration-200 transform active:scale-[0.98] flex items-center justify-between px-5 overflow-hidden"
+          className="brand-button relative group w-full py-4 rounded-2xl bg-linear-to-r from-blue-600 via-indigo-600 to-violet-600 hover:brightness-105 text-white font-black text-base tracking-wide transition-all duration-200 transform active:scale-[0.98] flex items-center justify-between px-5 overflow-hidden"
         >
           <div className="flex items-center gap-3">
             <div className="w-9 h-9 rounded-xl bg-white/20 flex items-center justify-center">
@@ -331,7 +308,7 @@ export function HomeScreen({
             playButtonTap();
             onPlayCategories();
           }}
-          className="w-full py-3 rounded-xl bg-white dark:bg-slate-900 hover:bg-zinc-50 dark:hover:bg-slate-800 border border-zinc-200/90 dark:border-slate-800 text-zinc-800 dark:text-slate-200 font-bold text-xs tracking-wide shadow-2xs transition-all active:scale-[0.98] flex items-center justify-center gap-2"
+          className="glass-card w-full py-3 rounded-xl hover:bg-white border border-white/80 dark:border-slate-700 text-blue-900 dark:text-slate-100 font-bold text-xs tracking-wide shadow-2xs transition-all active:scale-[0.98] flex items-center justify-center gap-2"
         >
           <Grid className="w-4 h-4 text-zinc-500" />
           <span>Free Categories ({completedCategoriesCount}/{totalCategories} Unlocked)</span>

@@ -13,6 +13,42 @@ html, body {
   -webkit-user-select: none;
 }
 
+#app-root {
+  background-image:
+    radial-gradient(circle at 15% 10%, rgba(96, 165, 250, 0.20), transparent 28%),
+    radial-gradient(circle at 90% 88%, rgba(129, 140, 248, 0.18), transparent 30%),
+    linear-gradient(135deg, #eef5ff 0%, #f7f8ff 48%, #eef2ff 100%);
+}
+
+html.dark #app-root {
+  background-image:
+    radial-gradient(circle at 12% 8%, rgba(37, 99, 235, 0.22), transparent 28%),
+    radial-gradient(circle at 88% 90%, rgba(124, 58, 237, 0.20), transparent 32%),
+    linear-gradient(135deg, #071536 0%, #0b1735 48%, #17153d 100%);
+}
+
+.brand-panel {
+  background: linear-gradient(145deg, rgba(37, 99, 235, 0.98), rgba(67, 56, 202, 0.98));
+  box-shadow: 0 24px 60px rgba(37, 99, 235, 0.25), inset 0 1px rgba(255, 255, 255, 0.25);
+}
+
+.brand-button {
+  box-shadow: 0 14px 28px rgba(37, 99, 235, 0.23), inset 0 1px rgba(255, 255, 255, 0.35);
+  transition: transform 160ms cubic-bezier(0.23, 1, 0.32, 1), filter 160ms ease, box-shadow 160ms ease;
+}
+
+.brand-button:hover { filter: brightness(1.06); box-shadow: 0 18px 34px rgba(37, 99, 235, 0.30), inset 0 1px rgba(255, 255, 255, 0.4); }
+.brand-button:active { transform: scale(0.97); }
+
+.glass-card {
+  background: rgba(255, 255, 255, 0.78);
+  border: 1px solid rgba(255, 255, 255, 0.9);
+  box-shadow: 0 14px 30px rgba(30, 64, 175, 0.10), inset 0 1px rgba(255,255,255,.85);
+  backdrop-filter: blur(14px);
+}
+
+html.dark .glass-card { background: rgba(15, 23, 42, 0.78); border-color: rgba(148, 163, 184, 0.16); box-shadow: 0 14px 30px rgba(2, 6, 23, 0.28); }
+
 html.dark, html.dark body {
   background-color: #0b0f19;
   color: #f1f5f9;
@@ -37,4 +73,3 @@ html.dark, html.dark body {
 .hint-flash-animation {
   animation: hint-pulse-3x 0.5s ease-in-out 3;
 }
-

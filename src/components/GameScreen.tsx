@@ -621,7 +621,7 @@ export function GameScreen({
       {/* Stats Bar: Score, Timer, Hint Button */}
       <div
         id="game-status-bar"
-        className="flex items-center justify-between px-3 py-1.5 rounded-2xl bg-white dark:bg-slate-900 shadow-xs border border-zinc-200/80 dark:border-slate-800 mb-1.5 transition-colors"
+        className="glass-card flex items-center justify-between px-3 py-2 rounded-2xl mb-1.5 transition-colors"
       >
         {/* Score Counter */}
         <div className="relative flex flex-col">
@@ -781,7 +781,7 @@ export function GameScreen({
         <div
           id="word-search-grid"
           ref={gridRef}
-          className={`relative grid p-2 rounded-2xl shadow-md touch-none select-none transition-colors ${activeTileTheme.gridContainerClass}`}
+          className={`relative grid p-2.5 rounded-[1.35rem] shadow-xl ring-1 ring-white/30 touch-none select-none transition-colors ${activeTileTheme.gridContainerClass}`}
           style={{
             gridTemplateColumns: `repeat(${puzzle.size}, minmax(0, 1fr))`,
             gap: puzzle.size >= 12 ? '2px' : '4px',

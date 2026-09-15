@@ -137,8 +137,6 @@ export function ResultsScreen({
     : level
     ? `Level ${level.levelNumber} Mastered!`
     : `${category?.name} Completed`;
-  const emoji = dailyChallenge ? dailyChallenge.emoji : level ? level.emoji : category?.emoji || '🏆';
-
   const formatTime = (totalSec: number) => {
     const mins = Math.floor(totalSec / 60);
     const secs = totalSec % 60;
@@ -166,13 +164,15 @@ export function ResultsScreen({
         </div>
 
         {/* Victory Icon / Level Emoji */}
-        <div className="relative mt-2 mb-2">
-          <div className="w-18 h-18 rounded-3xl bg-linear-to-tr from-blue-500 via-indigo-500 to-purple-500 flex items-center justify-center text-4xl shadow-xl shadow-blue-500/20 animate-in zoom-in-75 duration-300">
-            {emoji}
+        <div className="brand-panel relative mt-2 mb-3 w-full rounded-[2rem] px-5 py-6 overflow-hidden">
+          <div className="absolute -right-10 -top-10 h-32 w-32 rounded-full bg-white/15 blur-2xl" />
+          <div className="relative mx-auto mb-3 flex h-20 w-20 items-center justify-center rounded-[1.5rem] bg-white/15 text-4xl shadow-xl ring-4 ring-white/20 animate-in zoom-in-75 duration-300">
+            <img src="/icon.svg" alt="Word Quest logo" className="h-20 w-20 rounded-[1.5rem]" />
           </div>
-          <div className="absolute -bottom-1 -right-1 bg-emerald-500 text-white p-1.5 rounded-full shadow-md">
+          <div className="absolute bottom-5 right-5 bg-emerald-500 text-white p-1.5 rounded-full shadow-md">
             <CheckCircle2 className="w-4 h-4" />
           </div>
+          <div className="relative text-center text-white text-xs font-bold uppercase tracking-[0.2em]">Puzzle completed</div>
         </div>
 
         {/* Stars rating banner for Level mode or Daily Challenge */}
