@@ -8,7 +8,7 @@ import { getDailyChallengeForDate, getTodayDateKey } from './utils/dailyChalleng
 import { MusicEngine } from './utils/musicEngine.ts';
 import { Storage } from './utils/storage.ts';
 import { AdMobManager } from './utils/admob.ts';
-import { CrazyGamesManager } from './utils/crazygames.ts';
+import { CrazyGamesManager, isCrazyGamesHost } from './utils/crazygames.ts';
 import { AdModal } from './components/AdModal.tsx';
 import { BannerAd } from './components/BannerAd.tsx';
 import { HomeScreen } from './components/HomeScreen.tsx';
@@ -234,6 +234,15 @@ export default function App() {
     setSelectedMode(mode);
     setScreen('game');
   };
+
+  useEffect(() => {
+    if (!isCrazyGamesHost()) return;
+    const firstLevel = getLevelDef(1);
+    setActiveDailyChallenge(null);
+    setSelectedMode('classic');
+    setCurrentLevel(firstLevel);
+    setScreen('game');
+  }, []);
 
   const handleLevelComplete = (data: {
     score: number;

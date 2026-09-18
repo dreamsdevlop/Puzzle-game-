@@ -33,6 +33,10 @@ let loadPromise: Promise<CrazyEnvironment> | null = null;
 let environment: CrazyEnvironment = 'disabled';
 let gameplayActive = false;
 
+export function isCrazyGamesHost(): boolean {
+  return typeof window !== 'undefined' && /(^|\.)crazygames\.com$/i.test(window.location.hostname);
+}
+
 function canUseCrazyGames(): boolean {
   return typeof window !== 'undefined' && !Capacitor.isNativePlatform();
 }
