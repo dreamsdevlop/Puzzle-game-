@@ -1,5 +1,6 @@
 import { useEffect, useRef } from 'react';
 import { AdMobManager } from '../utils/admob.ts';
+import { CrazyGamesManager } from '../utils/crazygames.ts';
 
 interface AdModalProps {
   type: 'interstitial' | 'rewarded';
@@ -23,14 +24,14 @@ export function AdModal({ type, isOpen, onClose, onRewardEarned }: AdModalProps)
 
     const currentRequest = ++requestId.current;
     const showAd = async () => {
-      if (!AdMobManager.isNative()) {
-        onCloseRef.current();
-        return;
-      }
-
-      const shown = type === 'rewarded'
-        ? await AdMobManager.showRewarded()
-        : await AdMobManager.showInterstitial();
+      const shown = AdMobManager.isNative()
+        ? type === 'rewarded'
+          ? await AdMobManager.showRewarded()
+          : await AdMobManager.showInterstitial()
+        : await CrazyGamesManager.requestVideoAd(
+          type === 'rewarded' ? 'rewarded' : 'midgame',
+          {},
+        );
 
       if (currentRequest !== requestId.current) return;
       if (shown && type === 'rewarded') onRewardRef.current?.();
@@ -43,7 +44,7 @@ export function AdModal({ type, isOpen, onClose, onRewardEarned }: AdModalProps)
     };
   }, [isOpen, type]);
 
-  if (!isOpen || !AdMobManager.isNative()) return null;
+  if (!isOpen) return null;
 
   return (
     <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/35 backdrop-blur-xs">

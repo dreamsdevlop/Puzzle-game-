@@ -1,5 +1,5 @@
 {
-  "appId": "com.wordsearch.puzzle",
+  "appId": "com.wordquest.puzzle",
   "appName": "Word Quest: Brain Search",
   "webDir": "dist",
   "server": {

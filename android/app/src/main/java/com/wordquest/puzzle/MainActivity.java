@@ -1,4 +1,4 @@
-package com.wordsearch.puzzle;
+package com.wordquest.puzzle;
 
 import com.getcapacitor.BridgeActivity;
 

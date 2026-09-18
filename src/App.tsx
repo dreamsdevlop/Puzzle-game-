@@ -8,6 +8,7 @@ import { getDailyChallengeForDate, getTodayDateKey } from './utils/dailyChalleng
 import { MusicEngine } from './utils/musicEngine.ts';
 import { Storage } from './utils/storage.ts';
 import { AdMobManager } from './utils/admob.ts';
+import { CrazyGamesManager } from './utils/crazygames.ts';
 import { AdModal } from './components/AdModal.tsx';
 import { BannerAd } from './components/BannerAd.tsx';
 import { HomeScreen } from './components/HomeScreen.tsx';
@@ -19,6 +20,7 @@ import { ResultsScreen } from './components/ResultsScreen.tsx';
 import { SettingsModal } from './components/SettingsModal.tsx';
 import { ThemeShopModal } from './components/ThemeShopModal.tsx';
 import { WebAdFooter, WebAdRail, WebAdSafeStyles, WebAdSlots } from './components/WebAdSlots.tsx';
+import { CrazyGamesBanner } from './components/CrazyGamesBanner.tsx';
 
 export default function App() {
   // Navigation & Screen state
@@ -133,6 +135,20 @@ export default function App() {
     }
     void AdMobManager.initialize();
   }, []);
+
+  useEffect(() => {
+    if (AdMobManager.isNative()) return;
+    void CrazyGamesManager.initialize();
+  }, []);
+
+  useEffect(() => {
+    if (AdMobManager.isNative()) return;
+    if (screen === 'game') {
+      void CrazyGamesManager.gameplayStart();
+    } else {
+      void CrazyGamesManager.gameplayStop();
+    }
+  }, [screen]);
 
   useEffect(() => {
     const refreshToday = () => {
@@ -457,6 +473,7 @@ export default function App() {
       {!isSettingsOpen && !isShopOpen && <WebAdSlots screen={screen} />}
       {!isSettingsOpen && !isShopOpen && <WebAdFooter />}
       {!isSettingsOpen && !isShopOpen && <WebAdRail />}
+      {!isSettingsOpen && !isShopOpen && <CrazyGamesBanner />}
 
       {/* Native Android AdMob banner: natural breakpoints only, never during active solving. */}
       <BannerAd

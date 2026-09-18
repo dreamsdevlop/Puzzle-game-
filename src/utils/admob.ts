@@ -85,7 +85,7 @@ async function ensureReady(): Promise<boolean> {
       initialized = true;
       console.info('[AdMob] SDK initialized for', {
         appId: ADMOB_PRODUCTION_CONFIG.appId,
-        packageId: 'com.wordsearch.puzzle',
+        packageId: 'com.wordquest.puzzle',
       });
     }
 
