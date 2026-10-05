@@ -1,5 +1,6 @@
 import { useEffect, useRef } from 'react';
 import { isCrazyGamesHost } from '../utils/crazygames.ts';
+import { AdMobManager } from '../utils/admob.ts';
 
 declare global {
   interface Window {
@@ -91,7 +92,12 @@ function WebAdSlot({ slotId, keyValue, width, height, className = '' }: WebAdSlo
 }
 
 export function WebAdSlots({ screen }: { screen: string }) {
-  if (typeof window === 'undefined' || screen === 'game' || isCrazyGamesHost()) return null;
+  if (
+    typeof window === 'undefined' ||
+    AdMobManager.isNative() ||
+    screen === 'game' ||
+    isCrazyGamesHost()
+  ) return null;
 
   return (
     <section
@@ -126,7 +132,7 @@ export function WebAdSlots({ screen }: { screen: string }) {
 }
 
 export function WebAdRail() {
-  if (typeof window === 'undefined' || isCrazyGamesHost()) return null;
+  if (typeof window === 'undefined' || AdMobManager.isNative() || isCrazyGamesHost()) return null;
   return (
     <aside className="pointer-events-none fixed left-2 top-1/2 z-10 hidden -translate-y-1/2 xl:block">
       <div className="pointer-events-auto w-[160px]">
@@ -143,7 +149,7 @@ export function WebAdRail() {
 }
 
 export function WebAdFooter() {
-  if (typeof window === 'undefined' || isCrazyGamesHost()) return null;
+  if (typeof window === 'undefined' || AdMobManager.isNative() || isCrazyGamesHost()) return null;
   return (
     <div className="mx-auto hidden w-full max-w-[468px] items-center justify-center px-3 pb-3 sm:flex">
       <WebAdSlot
