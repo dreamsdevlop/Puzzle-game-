@@ -1,7 +1,7 @@
 import { useEffect, useMemo, useState } from 'react';
 import { Category, CustomizationState, DailyChallengeDef, DailyStreakInfo, GameMode, LevelDef, LevelStarRecord, Screen, Theme } from './types.ts';
 import { CATEGORIES } from './data/categories.ts';
-import { calculateBrainRank, getLevelDef } from './data/levels.ts';
+import { calculateBrainRank, CURATED_LEVELS, getLevelDef } from './data/levels.ts';
 import { getTileThemeById, getWallpaperById } from './data/shopThemes.ts';
 import { initAudioSettings, setAudioEnabled } from './utils/audio.ts';
 import { getDailyChallengeForDate, getTodayDateKey } from './utils/dailyChallenge.ts';
@@ -374,6 +374,8 @@ export default function App() {
         <HomeScreen
           coins={coins}
           highestUnlockedLevel={highestUnlockedLevel}
+          completedLevelCount={completedLevelCount}
+          totalLevels={CURATED_LEVELS.length}
           totalStars={totalStars}
           brainRankTitle={brainRank.rankTitle}
           completedCategoriesCount={completedLevels.length}

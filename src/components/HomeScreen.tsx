@@ -9,6 +9,8 @@ import { ThemeToggle } from './ThemeToggle.tsx';
 interface HomeScreenProps {
   coins: number;
   highestUnlockedLevel: number;
+  completedLevelCount: number;
+  totalLevels: number;
   totalStars: number;
   brainRankTitle: string;
   completedCategoriesCount: number;
@@ -31,6 +33,8 @@ interface HomeScreenProps {
 export function HomeScreen({
   coins,
   highestUnlockedLevel,
+  completedLevelCount,
+  totalLevels,
   totalStars,
   brainRankTitle,
   completedCategoriesCount,
@@ -174,6 +178,19 @@ export function HomeScreen({
             Lvl {highestUnlockedLevel}
           </span>
         </div>
+        <div className="mt-3 w-full max-w-xs text-center">
+          <div className="flex items-center justify-between text-[10px] font-bold text-blue-100">
+            <span>Journey progress</span>
+            <span>{completedLevelCount}/{totalLevels} levels</span>
+          </div>
+          <div className="mt-1.5 h-1.5 overflow-hidden rounded-full bg-white/20">
+            <div
+              className="h-full rounded-full bg-gradient-to-r from-amber-300 to-white transition-all"
+              style={{ width: `${Math.min(100, (completedLevelCount / Math.max(1, totalLevels)) * 100)}%` }}
+            />
+          </div>
+          <div className="mt-1 text-[10px] font-semibold text-blue-100/80">{totalStars} stars collected</div>
+        </div>
       </div>
 
       {/* Bottom Actions: Daily Challenge + Level Journey + Categories Mode */}
@@ -181,6 +198,7 @@ export function HomeScreen({
         {/* Daily Challenge Action Card */}
         <button
           id="home-daily-challenge-btn"
+          aria-label={`Play today's ${todayChallenge.theme} Daily Challenge`}
           onClick={() => {
             playButtonTap();
             onPlayDailyChallenge();
@@ -302,6 +320,7 @@ export function HomeScreen({
         {/* Primary Action: Level Journey */}
         <button
           id="home-level-journey-btn"
+          aria-label={`Continue to level ${highestUnlockedLevel}`}
           onClick={() => {
             playButtonTap();
             onPlayLevelJourney();
@@ -317,7 +336,7 @@ export function HomeScreen({
                 Mind Progression
               </div>
               <div className="text-base font-black leading-tight">
-                Play Level {highestUnlockedLevel}
+                Continue Level {highestUnlockedLevel}
               </div>
             </div>
           </div>
@@ -333,6 +352,7 @@ export function HomeScreen({
         {/* Secondary Action: Categories Mode */}
         <button
           id="home-categories-btn"
+          aria-label="Browse free word categories"
           onClick={() => {
             playButtonTap();
             onPlayCategories();
@@ -347,6 +367,7 @@ export function HomeScreen({
         {onOpenShop && (
           <button
             id="home-themes-shop-btn"
+            aria-label="Open the theme and wallpaper store"
             onClick={() => {
               playSatisfyingClick();
               onOpenShop();
