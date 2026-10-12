@@ -53,7 +53,7 @@ The screenshot assets are polished store-preview visuals based on the Word Quest
 - Category: Games → Puzzle
 - Price: Free
 - Contains ads: Yes
-- Package name: `com.wordsearch.puzzle`
+- Package name: `com.wordquest.puzzle`
 - Recommended tags: Word, Puzzle, Casual, Brain training
 
 ## Important policy reminders

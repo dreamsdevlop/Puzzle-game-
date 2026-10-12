@@ -68,7 +68,7 @@ The expected output is:
 android/app/build/outputs/bundle/release/app-release.aab
 ```
 
-Verify the package ID remains `com.wordsearch.puzzle`, inspect the version code/name, and calculate a checksum before uploading:
+Verify the package ID remains `com.wordquest.puzzle`, inspect the version code/name, and calculate a checksum before uploading:
 
 ```bash
 sha256sum android/app/build/outputs/bundle/release/app-release.aab
@@ -76,7 +76,7 @@ sha256sum android/app/build/outputs/bundle/release/app-release.aab
 
 ## Play Console checklist
 
-Create a new Play Console app named `Word Quest: Brain Search` with package ID `com.wordsearch.puzzle`, upload the signed AAB to an internal testing track first, complete the Data safety form, declare the app’s ads, and configure the AdMob app ID and ad units. Configure the AdMob Privacy & messaging consent form for regions where Google requires consent. Keep test ads enabled until the internal test build has been verified.
+Create a new Play Console app named `Word Quest: Brain Search` with package ID `com.wordquest.puzzle`, upload the signed AAB to an internal testing track first, complete the Data safety form, declare the app’s ads, and configure the AdMob app ID and ad units. Configure the AdMob Privacy & messaging consent form for regions where Google requires consent. Keep test ads enabled until the internal test build has been verified.
 
 ## Complete AdMob readiness checklist
 
@@ -84,7 +84,7 @@ The code-side configuration is internally consistent:
 
 | Item | Value | Location or action |
 |---|---|---|
-| Android package | `com.wordsearch.puzzle` | Must exactly match the Play Console package name and the AdMob app association |
+| Android package | `com.wordquest.puzzle` | Must exactly match the Play Console package name and the AdMob app association |
 | AdMob app ID | `ca-app-pub-8857493053340063~9438377409` | Android manifest, Capacitor configuration, and AdMob console |
 | Primary banner unit | `ca-app-pub-8857493053340063/5636350884` | AdMob console and `src/utils/admob.ts` |
 | Banner fallback unit | `ca-app-pub-8857493053340063/5307560708` | AdMob console and `src/utils/admob.ts` |

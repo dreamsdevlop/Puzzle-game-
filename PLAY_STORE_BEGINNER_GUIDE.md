@@ -13,7 +13,7 @@ Use these values:
 | App or game | Game |
 | Free or paid | Free |
 | Contains ads | Yes |
-| Package name | `com.wordsearch.puzzle` |
+| Package name | `com.wordquest.puzzle` |
 | Category | Games → Puzzle |
 | Tags | Word, Puzzle, Brain training, Casual |
 
@@ -87,7 +87,7 @@ After uploading the AAB:
 
 ## 7. AdMob readiness
 
-In AdMob, link the app to the exact public Play listing with package ID `com.wordsearch.puzzle`. Confirm that the app is `Ready`, the banner and rewarded units are active, consent messaging is configured, and the Policy Center has no unresolved issue.
+In AdMob, link the app to the exact public Play listing with package ID `com.wordquest.puzzle`. Confirm that the app is `Ready`, the banner and rewarded units are active, consent messaging is configured, and the Policy Center has no unresolved issue.
 
 Host the following line at the root of the developer website listed in the Play listing:
 
@@ -112,7 +112,7 @@ For every later update, increment the Android `versionCode` and keep the same pa
 ## 9. Final pre-launch checklist
 
 - [ ] App name is Word Quest: Brain Search.
-- [ ] Package is `com.wordsearch.puzzle`.
+- [ ] Package is `com.wordquest.puzzle`.
 - [ ] Signed AAB uploaded successfully.
 - [ ] Google Play App Signing configured.
 - [ ] Internal tester installed the Play version.

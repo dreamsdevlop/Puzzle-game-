@@ -2,7 +2,7 @@
 
 ## Executive conclusion
 
-The native implementation is configured correctly for the supplied production AdMob app and units. The current Android app uses the supplied primary banner unit, the supplied banner fallback unit, and the supplied rewarded unit. It requests consent before initializing the Mobile Ads SDK, hides the banner during active puzzle play, and does not expose ad IDs or a public test toggle in the game interface.
+The native implementation is configured for the supplied production AdMob app and units. The current Android app uses the supplied primary banner unit, the supplied banner fallback unit, and the supplied rewarded unit. It requests consent before initializing the Mobile Ads SDK, keeps one bottom banner visible during normal play, hides it while Settings or Shop overlays are open, and does not expose ad IDs or a public test toggle in the game interface.
 
 If real ads still do not appear in the signed APK, the most likely cause is AdMob account or app readiness rather than the APK. Google states that a new app must be published, listed in a supported store, correctly linked to that store in AdMob, and approved through app readiness before it can fully serve ads. During review, ad serving may be limited for two to three days or longer. The AdMob account must also be verified, including payment details where required.[1]
 
@@ -12,21 +12,21 @@ A debug-signed APK installed directly on a device is useful for technical valida
 
 | Possible cause | How to verify | Correct action |
 |---|---|---|
-| App is not publicly available in a supported store | AdMob **All apps** page shows the app as getting ready, unlinked, or not ready | Publish the package `com.wordsearch.puzzle` to a supported Play testing or production track as appropriate, then link the exact store listing in AdMob |
+| App is not publicly available in a supported store | AdMob **All apps** page shows the app as getting ready, unlinked, or not ready | Publish the package `com.wordquest.puzzle` to a supported Play testing or production track as appropriate, then link the exact store listing in AdMob |
 | AdMob app readiness review is incomplete | Check the app readiness and ad-serving status in AdMob | Resolve policy or verification notices and wait for review; Google reports that review commonly takes two to three days but may take longer |
 | AdMob account is not verified | Check account verification and payment details | Complete the requested account verification steps |
-| Package ID does not match the linked store app | Compare the Play package name with `com.wordsearch.puzzle` | Keep the same application ID in Capacitor, Gradle, AdMob, and Play Console |
+| Package ID does not match the linked store app | Compare the Play package name with `com.wordquest.puzzle` | Keep the same application ID in Capacitor, Gradle, AdMob, and Play Console |
 | Consent prevents ad requests | Check whether the consent form completed and whether `canRequestAds` became true | Configure Google UMP Privacy & Messaging for the app and test from a clean install in a consent-required region |
 | Unit is new, inactive, or has no fill | Check the ad unit status and request/error metrics in AdMob | Confirm the unit is active and allow time for fill; use a test unit only for development diagnostics |
 | Network or device restrictions | Test on a real network without VPN, private DNS, or ad blocking | Retry on a normal connection and inspect Android logcat for Mobile Ads errors |
 | APK was built from stale assets | Search the generated web assets for the intended unit IDs | Re-run `npm run build`, `npx cap sync android`, then rebuild the APK/AAB |
-| Banner is positioned under an overlay or system inset | Inspect the device screen and logcat | Verify the banner is visible on the home/results screens; the current code hides it during the game screen by design |
+| Banner is positioned under an overlay or system inset | Inspect the device screen and logcat | Verify the banner is visible during normal play and disappears when Settings or Shop overlays are open |
 
 ## Current implementation status
 
 The latest code uses `ca-app-pub-8857493053340063/5636350884` as the primary banner and `ca-app-pub-8857493053340063/5307560708` as a fallback. It uses `ca-app-pub-8857493053340063/3042053114` for rewarded ads. Interstitial ads are intentionally disabled until a dedicated interstitial unit is supplied; the rewarded unit should not be reused as an interstitial unit.
 
-The app’s Android application ID is `ca-app-pub-8857493053340063~9438377409`, and the package ID is `com.wordsearch.puzzle`. The game logo is now used for Android launcher assets. The settings screen no longer exposes the AdMob IDs, test-mode switch, or simulated ad preview.
+The app’s AdMob application ID is `ca-app-pub-8857493053340063~9438377409`, and the Android package ID is `com.wordquest.puzzle`. The game logo is now used for Android launcher assets. The settings screen no longer exposes the AdMob IDs, test-mode switch, or simulated ad preview.
 
 ## Highest-impact engagement improvements
 
@@ -74,11 +74,11 @@ Rewarded ads should be explicitly opt-in, should state the reward before display
 
 **Track the full funnel.** Record puzzle start, puzzle completion, reward offer shown, reward accepted, reward earned, ad load failure, ad show failure, and next-day return. Revenue optimization is not successful if it increases ad impressions while reducing completion or retention.
 
-**Keep banners out of active solving.** The current choice to hide banners during puzzle interaction is good for usability. A small number of well-timed rewarded ads usually has better long-term value than covering the board with a persistent banner.
+**Protect the active board area.** The current banner is a single bottom banner and should never overlap the puzzle grid or word list. If analytics later shows that active-solving banners reduce completion or retention, test hiding the banner on the game screen rather than adding more ad formats.
 
 ## Recommended release sequence
 
-1. In AdMob, confirm the app ID is linked to the exact Play listing for `com.wordsearch.puzzle`.
+1. In AdMob, confirm the AdMob app ID is linked to the exact Play listing for `com.wordquest.puzzle`.
 2. Confirm both banner units and the rewarded unit are active and belong to the same AdMob app.
 3. Complete the app readiness, account verification, privacy, and data-safety steps.
 4. Upload the AAB to an internal or closed Play testing track.
