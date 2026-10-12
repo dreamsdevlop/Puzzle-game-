@@ -484,11 +484,10 @@ export default function App() {
       {!isSettingsOpen && !isShopOpen && <WebAdRail />}
       {!isSettingsOpen && !isShopOpen && <CrazyGamesBanner />}
 
-      {/* Native Android AdMob banner: natural breakpoints only, never during active solving. */}
+      {/* Native Android AdMob banner: one adaptive bottom banner, including during gameplay. */}
       <BannerAd
         visible={
           AdMobManager.isNative() &&
-          screen !== 'game' &&
           !isSettingsOpen &&
           !isShopOpen
         }
