@@ -37,6 +37,8 @@ const STORAGE_KEYS = {
   EQUIPPED_WALLPAPER: '@word_search_equipped_wallpaper',
   PURCHASED_TILE_THEMES: '@word_search_purchased_tile_themes',
   EQUIPPED_TILE_THEME: '@word_search_equipped_tile_theme',
+  ONBOARDING_COMPLETE: '@word_search_onboarding_complete',
+  WEEKLY_QUEST_CLAIMED: '@word_search_weekly_quest_claimed',
 };
 
 export interface AdState {
@@ -45,6 +47,22 @@ export interface AdState {
 }
 
 export const Storage = {
+  hasCompletedOnboarding(): boolean {
+    try {
+      return localStorage.getItem(STORAGE_KEYS.ONBOARDING_COMPLETE) === 'true';
+    } catch {
+      return false;
+    }
+  },
+
+  completeOnboarding(): void {
+    try {
+      localStorage.setItem(STORAGE_KEYS.ONBOARDING_COMPLETE, 'true');
+    } catch {
+      // fallback
+    }
+  },
+
   getCoins(): number {
     try {
       const saved = localStorage.getItem(STORAGE_KEYS.COINS);
@@ -91,6 +109,44 @@ export const Storage = {
     if (completedLevelNumbers.length === 0) return 1;
     const maxCompleted = Math.max(...completedLevelNumbers);
     return maxCompleted + 1;
+  },
+
+  getWeeklyClassicLevelCount(now = Date.now()): number {
+    const progress = this.getLevelProgress();
+    const date = new Date(now);
+    const day = date.getDay();
+    const mondayOffset = day === 0 ? 6 : day - 1;
+    date.setHours(0, 0, 0, 0);
+    date.setDate(date.getDate() - mondayOffset);
+    const weekStart = date.getTime();
+    return (Object.values(progress) as LevelStarRecord[]).filter((record) => record.completedAt >= weekStart).length;
+  },
+
+  getWeekKey(now = Date.now()): string {
+    const date = new Date(now);
+    const day = date.getDay();
+    const mondayOffset = day === 0 ? 6 : day - 1;
+    date.setHours(0, 0, 0, 0);
+    date.setDate(date.getDate() - mondayOffset);
+    return `${date.getFullYear()}-${String(date.getMonth() + 1).padStart(2, '0')}-${String(date.getDate()).padStart(2, '0')}`;
+  },
+
+  isWeeklyQuestClaimed(now = Date.now()): boolean {
+    try {
+      return localStorage.getItem(STORAGE_KEYS.WEEKLY_QUEST_CLAIMED) === this.getWeekKey(now);
+    } catch {
+      return false;
+    }
+  },
+
+  claimWeeklyQuest(now = Date.now()): boolean {
+    if (this.isWeeklyQuestClaimed(now)) return false;
+    try {
+      localStorage.setItem(STORAGE_KEYS.WEEKLY_QUEST_CLAIMED, this.getWeekKey(now));
+    } catch {
+      return false;
+    }
+    return true;
   },
 
   saveLevelProgress(

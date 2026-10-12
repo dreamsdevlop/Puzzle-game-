@@ -21,6 +21,7 @@ import { SettingsModal } from './components/SettingsModal.tsx';
 import { ThemeShopModal } from './components/ThemeShopModal.tsx';
 import { WebAdFooter, WebAdRail, WebAdSafeStyles, WebAdSlots } from './components/WebAdSlots.tsx';
 import { CrazyGamesBanner } from './components/CrazyGamesBanner.tsx';
+import { OnboardingOverlay } from './components/OnboardingOverlay.tsx';
 
 export default function App() {
   // Navigation & Screen state
@@ -55,6 +56,9 @@ export default function App() {
   const [highestUnlockedLevel, setHighestUnlockedLevel] = useState<number>(() =>
     Storage.getHighestUnlockedLevel(),
   );
+  const [weeklyLevelCount, setWeeklyLevelCount] = useState(() => Storage.getWeeklyClassicLevelCount());
+  const [weeklyQuestClaimed, setWeeklyQuestClaimed] = useState(() => Storage.isWeeklyQuestClaimed());
+  const [showOnboarding, setShowOnboarding] = useState(() => !Storage.hasCompletedOnboarding());
   const [soundEnabled, setSoundEnabledState] = useState(() =>
     Storage.getSoundEnabled(),
   );
@@ -289,6 +293,12 @@ export default function App() {
 
       setLevelProgress(Storage.getLevelProgress());
       setHighestUnlockedLevel(Storage.getHighestUnlockedLevel());
+      const updatedWeeklyCount = Storage.getWeeklyClassicLevelCount();
+      setWeeklyLevelCount(updatedWeeklyCount);
+      if (updatedWeeklyCount >= 3 && Storage.claimWeeklyQuest()) {
+        setCoins(Storage.addCoins(150));
+        setWeeklyQuestClaimed(true);
+      }
 
       setResultsData({
         ...data,
@@ -370,6 +380,8 @@ export default function App() {
           totalCategories={CATEGORIES.length}
           dailyStreak={dailyStreak}
           todayChallenge={todayChallenge}
+          weeklyLevelCount={weeklyLevelCount}
+          weeklyQuestClaimed={weeklyQuestClaimed}
           soundEnabled={soundEnabled}
           theme={theme}
           onToggleSound={handleToggleSound}
@@ -505,6 +517,15 @@ export default function App() {
           adModal.onReward?.();
         }}
       />
+
+      {showOnboarding && screen === 'home' && (
+        <OnboardingOverlay
+          onComplete={() => {
+            Storage.completeOnboarding();
+            setShowOnboarding(false);
+          }}
+        />
+      )}
 
       {/* Audio, Music, PWA & AdMob Settings Modal */}
       <SettingsModal

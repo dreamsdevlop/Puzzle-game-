@@ -1,4 +1,4 @@
-import { Brain, Calendar, Check, Coins, Compass, Download, Flame, Grid, Music, Palette, Play, Settings, Sparkles, Star, Volume2, VolumeX } from 'lucide-react';
+import { Brain, Calendar, Check, Coins, Compass, Download, Flame, Grid, Music, Palette, Play, Settings, Sparkles, Star, Trophy } from 'lucide-react';
 import { usePWA } from '../hooks/usePWA.ts';
 import { DailyChallengeDef, DailyStreakInfo, Theme } from '../types.ts';
 import { playButtonTap, playSatisfyingClick } from '../utils/audio.ts';
@@ -15,6 +15,8 @@ interface HomeScreenProps {
   totalCategories: number;
   dailyStreak: DailyStreakInfo;
   todayChallenge: DailyChallengeDef;
+  weeklyLevelCount: number;
+  weeklyQuestClaimed: boolean;
   soundEnabled: boolean;
   theme: Theme;
   onToggleSound: () => void;
@@ -35,6 +37,8 @@ export function HomeScreen({
   totalCategories,
   dailyStreak,
   todayChallenge,
+  weeklyLevelCount,
+  weeklyQuestClaimed,
   soundEnabled,
   theme,
   onToggleSound,
@@ -269,6 +273,31 @@ export function HomeScreen({
             </div>
           </div>
         </button>
+
+        {/* Short-term weekly quest */}
+        <div
+          id="home-weekly-quest"
+          className="w-full rounded-2xl border border-violet-200/80 bg-violet-50/80 px-4 py-3 shadow-xs dark:border-violet-900/70 dark:bg-violet-950/30"
+        >
+          <div className="flex items-center justify-between gap-3">
+            <div className="flex min-w-0 items-center gap-3">
+              <div className="flex h-9 w-9 shrink-0 items-center justify-center rounded-xl bg-violet-600 text-white shadow-sm">
+                <Trophy className="h-4 w-4" />
+              </div>
+              <div className="min-w-0 text-left">
+                <div className="text-[10px] font-black uppercase tracking-wider text-violet-700 dark:text-violet-300">Weekly Quest</div>
+                <div className="truncate text-xs font-bold text-slate-800 dark:text-slate-100">{weeklyQuestClaimed ? 'Weekly quest complete!' : 'Complete 3 level puzzles'}</div>
+              </div>
+            </div>
+            <div className="shrink-0 text-right">
+              <div className="font-mono text-sm font-black text-violet-700 dark:text-violet-300">{Math.min(3, weeklyLevelCount)}/3</div>
+              <div className="text-[9px] font-bold text-slate-500 dark:text-slate-400">{weeklyQuestClaimed ? 'Reward claimed' : '+150 coins'}</div>
+            </div>
+          </div>
+          <div className="mt-2 h-1.5 overflow-hidden rounded-full bg-violet-100 dark:bg-violet-900/60">
+            <div className="h-full rounded-full bg-gradient-to-r from-violet-500 to-fuchsia-500 transition-all" style={{ width: `${Math.min(100, (weeklyLevelCount / 3) * 100)}%` }} />
+          </div>
+        </div>
 
         {/* Primary Action: Level Journey */}
         <button
