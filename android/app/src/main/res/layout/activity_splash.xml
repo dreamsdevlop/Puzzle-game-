@@ -2,14 +2,100 @@
 <FrameLayout xmlns:android="http://schemas.android.com/apk/res/android"
     android:layout_width="match_parent"
     android:layout_height="match_parent"
-    android:background="@color/splash_background">
+    android:background="@drawable/splash_background"
+    android:clipChildren="false">
 
-    <ImageView
-        android:id="@+id/splash_image"
+    <View
+        android:layout_width="180dp"
+        android:layout_height="180dp"
+        android:layout_gravity="top|end"
+        android:layout_marginTop="94dp"
+        android:layout_marginEnd="-70dp"
+        android:alpha="0.7"
+        android:background="@drawable/splash_logo_back"
+        android:rotation="18" />
+
+    <View
+        android:layout_width="150dp"
+        android:layout_height="150dp"
+        android:layout_gravity="bottom|start"
+        android:layout_marginBottom="115dp"
+        android:layout_marginStart="-66dp"
+        android:alpha="0.45"
+        android:background="@drawable/splash_logo_back"
+        android:rotation="-18" />
+
+    <LinearLayout
+        android:id="@+id/splash_content"
         android:layout_width="match_parent"
-        android:layout_height="match_parent"
-        android:contentDescription="Word Quest: Brain Search"
-        android:scaleType="centerCrop"
-        android:src="@drawable/splash" />
+        android:layout_height="wrap_content"
+        android:layout_gravity="center"
+        android:gravity="center_horizontal"
+        android:orientation="vertical"
+        android:paddingStart="28dp"
+        android:paddingEnd="28dp">
+
+        <FrameLayout
+            android:id="@+id/splash_logo_frame"
+            android:layout_width="188dp"
+            android:layout_height="188dp"
+            android:background="@drawable/splash_logo_back"
+            android:elevation="18dp"
+            android:padding="12dp"
+            android:rotation="-2">
+
+            <ImageView
+                android:id="@+id/splash_image"
+                android:layout_width="match_parent"
+                android:layout_height="match_parent"
+                android:contentDescription="Word Quest: Brain Search logo"
+                android:scaleType="centerInside"
+                android:src="@mipmap/ic_launcher" />
+        </FrameLayout>
+
+        <TextView
+            android:id="@+id/splash_title"
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            android:layout_marginTop="28dp"
+            android:fontFamily="sans"
+            android:letterSpacing="0.04"
+            android:text="WORD QUEST"
+            android:textColor="#FFFFFFFF"
+            android:textSize="30sp"
+            android:textStyle="bold" />
+
+        <TextView
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            android:layout_marginTop="5dp"
+            android:fontFamily="sans"
+            android:letterSpacing="0.18"
+            android:text="BRAIN SEARCH"
+            android:textColor="#DCEBFFFF"
+            android:textSize="11sp"
+            android:textStyle="bold" />
+
+        <TextView
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            android:layout_marginTop="22dp"
+            android:fontFamily="sans"
+            android:text="Find your focus"
+            android:textColor="#FFFFFFB8"
+            android:textSize="13sp" />
+    </LinearLayout>
+
+    <TextView
+        android:layout_width="wrap_content"
+        android:layout_height="wrap_content"
+        android:layout_gravity="bottom|center_horizontal"
+        android:layout_marginBottom="32dp"
+        android:fontFamily="sans"
+        android:letterSpacing="0.16"
+        android:text="READY WHEN YOU ARE"
+        android:textColor="#FFFFFF80"
+        android:textSize="10sp"
+        android:textStyle="bold" />
 
 </FrameLayout>
